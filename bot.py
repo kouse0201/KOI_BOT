@@ -352,14 +352,15 @@ class WorkView(discord.ui.View):
             description="\n".join(working) if working else "出勤者なし"
         )
 
-    @discord.ui.button(label="出勤",style=discord.ButtonStyle.success,custom_id="start")
-    async def start(self,interaction,button):
+    @discord.ui.button(label="出勤", style=discord.ButtonStyle.success, custom_id="start")
+    async def start(self, interaction, button):
         init_user(interaction.user)
-        uid=str(interaction.user.id)
-        data[uid]["is_working"]=True
-        data[uid]["start_time"]=datetime.now(timezone.utc).astimezone(JST).isoformat()
+        uid = str(interaction.user.id)
+        data[uid]["is_working"] = True
+        data[uid]["start_time"] = datetime.now(timezone.utc).astimezone(JST).isoformat()
         save_data(data)
-        await interaction.response.edit_message(embed=self.embed(),view=self)
+        await interaction.response.edit_message(embed=self.embed(), view=self)
+        await update_status()
 
     @discord.ui.button(label="退勤",style=discord.ButtonStyle.danger,custom_id="end")
     async def end(self,interaction,button):
@@ -513,13 +514,17 @@ async def backup(interaction):
 @bot.event
 async def on_ready():
     global work_view
+    print("ログイン完了")
+
 
     fix_to_jst()
 
-    work_view=WorkView()
+    work_view = WorkView()
     bot.add_view(work_view)
     await tree.sync()
+    await update_status()  # ←ここで即時ステータス更新
     update_status.start()
+    
 
     print("起動OK2")
 
