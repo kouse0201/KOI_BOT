@@ -335,7 +335,12 @@ class WorkView(discord.ui.View):
         history=u.get("history",[])
         text=f"{h}時間{m}分\n"
         for hst in history[-5:]:
-            text+=f"{hst.get('start')} → {hst.get('end')}\n"
+            try:
+                start = datetime.fromisoformat(hst.get("start")).strftime("%Y/%m/%d %H:%M")
+                end = datetime.fromisoformat(hst.get("end")).strftime("%Y/%m/%d %H:%M")
+                text += f"{start} → {end}\n"
+            except:
+                text += f"{hst.get('start')} → {hst.get('end')}\n"
 
         await interaction.response.send_message(text,ephemeral=True)
 
