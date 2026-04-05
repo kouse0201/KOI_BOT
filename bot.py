@@ -1,13 +1,18 @@
 import discord
 from discord.ext import commands, tasks
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import os
 
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
+
+# ------------------------
+# JST
+# ------------------------
+JST = timezone(timedelta(hours=9))
 
 # ------------------------
 # データ
@@ -30,6 +35,9 @@ def init_user(user):
     if uid not in data:
         data[uid]={}
 
+    # ★名前を毎回更新
+    data[uid]["name"] = user.display_name
+
     defaults={
         "name":user.display_name,
         "is_working":False,
@@ -49,7 +57,46 @@ def yen(n):
     return f"{int(n):,}円"
 
 # ------------------------
-# ★追加：ステータス更新
+# UTC→JST変換関数（重要）
+# ------------------------
+def to_jst(dt):
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(JST)
+
+# ------------------------
+# ★過去データ補正
+# ------------------------
+def fix_to_jst():
+    changed = False
+
+    for uid, u in data.items():
+
+        st = u.get("start_time")
+        if st:
+            try:
+                dt = to_jst(datetime.fromisoformat(st))
+                u["start_time"] = dt.isoformat()
+                changed = True
+            except:
+                pass
+
+        for h in u.get("history", []):
+            for key in ["start", "end"]:
+                t = h.get(key)
+                if t:
+                    try:
+                        dt = to_jst(datetime.fromisoformat(t))
+                        h[key] = dt.isoformat()
+                        changed = True
+                    except:
+                        pass
+
+    if changed:
+        save_data(data)
+
+# ------------------------
+# ステータス更新
 # ------------------------
 def get_working_count():
     return sum(1 for u in data.values() if u.get("is_working"))
@@ -69,7 +116,7 @@ async def update_status():
         )
 
 # ------------------------
-# メニュー
+# メニュー（そのまま）
 # ------------------------
 MENU = {
     "全日メニュー":{
@@ -92,26 +139,26 @@ MENU = {
         "ろシあん闇鍋":{"price":6500,"cost":1750},
         "こいくん人形":{"price":6000,"cost":2250},
         "湯の花の瓶":{"price":6500,"cost":2200},
-        },
+    },
     "日中限定メニュー":{
         "肉厚とんかつ定食":{"price":6500,"cost":2500},
         "こいくんケーキ":{"price":5100,"cost":1875},
         "山菜の天ぷら蕎麦":{"price":6500,"cost":2500},
         "こいくんの温玉ソフト":{"price":5100,"cost":2250},
         "イカ飯弁当":{"price":8600,"cost":3250},
-        },
+    },
     "夜間限定メニュー":{
         "ほかほか湯豆腐スープ":{"price":6000,"cost":2375},
         "KOIの船盛り":{"price":8500,"cost":2500},
         "お子様プレミア定食":{"price":6500,"cost":2500},
         "贅沢かに御膳":{"price":8900,"cost":2750},
         "金目鯛の煮つけ":{"price":10000,"cost":3250},
-        },
+    },
     "チル限定メニュー":{
         "KOI印のお守り・青":{"price":8000,"cost":2875},
         "KOI印のお守り・赤":{"price":8000,"cost":2500},
         "ちるいん":{"price":9500,"cost":3625},
-        },
+    },
     "季節限定メニュー":{
         "春の桜づくしセット":{"price":16000,"cost":6625},
         "桜香る春御膳":{"price":6000,"cost":1500},
@@ -120,7 +167,7 @@ MENU = {
         "ちらし寿司(販売停止)":{"price":10000,"cost":3500},
         "本つげ櫛(販売停止)":{"price":10000,"cost":2500},
         "恋したあの人(販売停止)":{"price":7000,"cost":1500},
-        },
+    },
     "移動販売メニュー":{
         "いっぱい飲みにKOIよセット":{"price":13000,"cost":5250},
         "温泉麦酒KOI心":{"price":6000,"cost":2250},
@@ -129,13 +176,13 @@ MENU = {
         "すき焼き御膳":{"price":30000,"cost":12000},
         "濃い黒たまご":{"price":6500,"cost":2000},
         "ブレンド珈琲饅頭(PIPEDOWN-South-)":{"price":100000,"cost":27500},
-        },
+    },
     "イベントメニュー":{
         "田中さんのりんご飴":{"price":7100,"cost":2375},
         "KOIいちごみるく":{"price":5900,"cost":2625},
         "温泉のお香":{"price":6300,"cost":2000},
         "よくばりプリンパフェ":{"price":10000,"cost":2500},
-        }
+    }
 }
 
 CATEGORY_LIST=list(MENU.items())
@@ -144,7 +191,7 @@ def split_menu(page):
     return dict(CATEGORY_LIST[:4] if page==0 else CATEGORY_LIST[4:])
 
 # ------------------------
-# 注文UI
+# 注文UI（そのまま）
 # ------------------------
 class AmountModal(discord.ui.Modal):
     def __init__(self,view,item):
@@ -278,14 +325,28 @@ class OrderView(discord.ui.View):
         return True
 
 # ------------------------
-# 勤務UI
+# 勤務UI（修正済）
 # ------------------------
 class WorkView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     def embed(self):
-        working=[u.get("name") for u in data.values() if u.get("is_working")]
+        working=[]
+        for uid,u in data.items():
+            if u.get("is_working"):
+                name = u.get("name") or "不明"
+                st = u.get("start_time")
+
+                if st:
+                    try:
+                        t = to_jst(datetime.fromisoformat(st)).strftime("%H:%M")
+                        working.append(f"{name}({t}~)")
+                    except:
+                        working.append(f"{name}(??:??~)")
+                else:
+                    working.append(f"{name}(??:??~)")
+
         return discord.Embed(
             title="📋勤務パネル",
             description="\n".join(working) if working else "出勤者なし"
@@ -296,7 +357,7 @@ class WorkView(discord.ui.View):
         init_user(interaction.user)
         uid=str(interaction.user.id)
         data[uid]["is_working"]=True
-        data[uid]["start_time"]=datetime.now().isoformat()
+        data[uid]["start_time"]=datetime.now(timezone.utc).astimezone(JST).isoformat()
         save_data(data)
         await interaction.response.edit_message(embed=self.embed(),view=self)
 
@@ -305,13 +366,15 @@ class WorkView(discord.ui.View):
         init_user(interaction.user)
         uid=str(interaction.user.id)
 
-        start=datetime.fromisoformat(data[uid]["start_time"])
-        diff=(datetime.now()-start).total_seconds()
+        start = to_jst(datetime.fromisoformat(data[uid]["start_time"]))
+        now = datetime.now(timezone.utc).astimezone(JST)
+
+        diff=(now-start).total_seconds()
 
         data[uid]["total_time"]+=diff
         data[uid]["history"].append({
             "start":data[uid]["start_time"],
-            "end":datetime.now().isoformat()
+            "end":now.isoformat()
         })
 
         data[uid]["is_working"]=False
@@ -336,8 +399,8 @@ class WorkView(discord.ui.View):
         text=f"{h}時間{m}分\n"
         for hst in history[-5:]:
             try:
-                start = datetime.fromisoformat(hst.get("start")).strftime("%Y/%m/%d %H:%M")
-                end = datetime.fromisoformat(hst.get("end")).strftime("%Y/%m/%d %H:%M")
+                start = to_jst(datetime.fromisoformat(hst.get("start"))).strftime("%Y/%m/%d %H:%M")
+                end = to_jst(datetime.fromisoformat(hst.get("end"))).strftime("%Y/%m/%d %H:%M")
                 text += f"{start} → {end}\n"
             except:
                 text += f"{hst.get('start')} → {hst.get('end')}\n"
@@ -354,7 +417,7 @@ class WorkView(discord.ui.View):
         )
 
 # ------------------------
-# コマンド（完全）
+# コマンド（そのまま）
 # ------------------------
 work_view=None
 
@@ -379,8 +442,8 @@ async def time(interaction, member:discord.Member):
         text += "【出退勤履歴】\n"
         for hst in history[-5:]:
             try:
-                start = datetime.fromisoformat(hst.get("start")).strftime("%Y/%m/%d %H:%M")
-                end = datetime.fromisoformat(hst.get("end")).strftime("%Y/%m/%d %H:%M")
+                start = to_jst(datetime.fromisoformat(hst.get("start"))).strftime("%Y/%m/%d %H:%M")
+                end = to_jst(datetime.fromisoformat(hst.get("end"))).strftime("%Y/%m/%d %H:%M")
                 text += f"{start} → {end}\n"
             except:
                 text += f"{hst.get('start','?')} → {hst.get('end','?')}\n"
@@ -450,12 +513,14 @@ async def backup(interaction):
 @bot.event
 async def on_ready():
     global work_view
+
+    fix_to_jst()
+
     work_view=WorkView()
     bot.add_view(work_view)
     await tree.sync()
+    update_status.start()
 
-    update_status.start()  # ←追加
-
-    print("起動OK")
+    print("起動OK2")
 
 bot.run(os.getenv("TOKEN"))
