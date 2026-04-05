@@ -413,6 +413,17 @@ async def resetpaying(interaction,member:discord.Member):
     save_data(data)
     await interaction.response.send_message("OK",ephemeral=True)
 
+@tree.command(name="backup")
+async def backup(interaction):
+    try:
+        await interaction.response.send_message(
+            "📦 バックアップファイル👇",
+            file=discord.File("data.json"),
+            ephemeral=True
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"エラー: {e}", ephemeral=True)
+        
 # ------------------------
 # 起動
 # ------------------------
