@@ -315,7 +315,7 @@ class OrderView(discord.ui.View):
             ch=discord.utils.get(interaction.guild.text_channels,name="💹売上報告")
             if ch:
                 await ch.send(
-                    f"```\n販売者:{interaction.user.display_name}\n{text}\n"
+                    f"```\n📊売上報告\n販売者:{interaction.user.display_name}\n{text}\n"
                     f"請求:{yen(total)}\n原価:{yen(cost)}\n利益:{yen(profit)}\n給料:{yen(worker)}\n```"
                 )
 
