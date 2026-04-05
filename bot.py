@@ -511,8 +511,8 @@ async def backup(interaction):
 # ------------------------
 # ★追加：全体商品ランキング（同順位対応）
 # ------------------------
-@tree.command(name="bay")
-async def bay(interaction):
+@tree.command(name="buy")
+async def buy(interaction):
     all_items = {}
     for cat in MENU.values():
         for item in cat.keys():
