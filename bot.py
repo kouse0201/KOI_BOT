@@ -325,7 +325,7 @@ class OrderView(discord.ui.View):
         return True
 
 # ------------------------
-# 勤務UI
+# 勤務UI（修正済）
 # ------------------------
 class WorkView(discord.ui.View):
     def __init__(self):
@@ -418,7 +418,7 @@ class WorkView(discord.ui.View):
         )
 
 # ------------------------
-# コマンド
+# コマンド（そのまま）
 # ------------------------
 work_view=None
 
@@ -461,28 +461,52 @@ async def paying(interaction,member:discord.Member):
         ephemeral=True
     )
 
-# ★追加
-@tree.command(name="bay")
-async def bay(interaction):
-    all_items = {}
-    for cat in MENU.values():
-        for item in cat.keys():
-            all_items[item] = 0
+@tree.command(name="edittime")
+async def edittime(interaction,member:discord.Member,minutes:int):
+    init_user(member)
+    uid=str(member.id)
+    data[uid]["total_time"]=max(0,data[uid]["total_time"]+minutes*60)
+    save_data(data)
+    await interaction.response.send_message("OK",ephemeral=True)
 
-    for u in data.values():
-        for item, qty in u.get("items", {}).items():
-            if item in all_items:
-                all_items[item] += qty
-            else:
-                all_items[item] = qty
+@tree.command(name="editpaying")
+async def editpaying(interaction,member:discord.Member,target:str,amount:int):
+    init_user(member)
+    uid=str(member.id)
+    if target=="給料":
+        data[uid]["pay"]=max(0,data[uid]["pay"]+amount)
+    elif target=="売上":
+        data[uid]["sales"]=max(0,data[uid]["sales"]+amount)
+    save_data(data)
+    await interaction.response.send_message("OK",ephemeral=True)
 
-    ranking = sorted(all_items.items(), key=lambda x: x[1], reverse=True)
+@tree.command(name="resettime")
+async def resettime(interaction,member:discord.Member):
+    init_user(member)
+    uid=str(member.id)
+    data[uid]["total_time"]=0
+    data[uid]["history"]=[]
+    save_data(data)
+    await interaction.response.send_message("OK",ephemeral=True)
 
-    text = "📊【全体商品ランキング】\n\n"
-    for i, (item, qty) in enumerate(ranking, start=1):
-        text += f"{i}位：{item} ×{qty}個\n"
+@tree.command(name="resetpaying")
+async def resetpaying(interaction,member:discord.Member):
+    init_user(member)
+    uid=str(member.id)
+    data[uid]["pay"]=0
+    save_data(data)
+    await interaction.response.send_message("OK",ephemeral=True)
 
-    await interaction.response.send_message(text)
+@tree.command(name="backup")
+async def backup(interaction):
+    try:
+        await interaction.response.send_message(
+            "📦 バックアップファイル👇",
+            file=discord.File("data.json"),
+            ephemeral=True
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"エラー: {e}", ephemeral=True)
 
 # ------------------------
 # 起動
@@ -492,13 +516,15 @@ async def on_ready():
     global work_view
     print("ログイン完了")
 
+
     fix_to_jst()
 
     work_view = WorkView()
     bot.add_view(work_view)
     await tree.sync()
-    await update_status()
+    await update_status()  # ←ここで即時ステータス更新
     update_status.start()
+    
 
     print("起動OK2")
 
