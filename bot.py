@@ -509,6 +509,31 @@ async def backup(interaction):
         await interaction.response.send_message(f"エラー: {e}", ephemeral=True)
 
 # ------------------------
+# ★追加：全体商品ランキング
+# ------------------------
+@tree.command(name="bay")
+async def bay(interaction):
+    all_items = {}
+    for cat in MENU.values():
+        for item in cat.keys():
+            all_items[item] = 0
+
+    for u in data.values():
+        for item, qty in u.get("items", {}).items():
+            if item in all_items:
+                all_items[item] += qty
+            else:
+                all_items[item] = qty
+
+    ranking = sorted(all_items.items(), key=lambda x: x[1], reverse=True)
+
+    text = "📊【全体商品ランキング】\n\n"
+    for i, (item, qty) in enumerate(ranking, start=1):
+        text += f"{i}位：{item} ×{qty}個\n"
+
+    await interaction.response.send_message(text)
+
+# ------------------------
 # 起動
 # ------------------------
 @bot.event
@@ -516,15 +541,13 @@ async def on_ready():
     global work_view
     print("ログイン完了")
 
-
     fix_to_jst()
 
     work_view = WorkView()
     bot.add_view(work_view)
     await tree.sync()
-    await update_status()  # ←ここで即時ステータス更新
+    await update_status()
     update_status.start()
-    
 
     print("起動OK2")
 
