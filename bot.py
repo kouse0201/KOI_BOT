@@ -509,7 +509,7 @@ async def backup(interaction):
         await interaction.response.send_message(f"エラー: {e}", ephemeral=True)
 
 # ------------------------
-# ★追加：全体商品ランキング
+# ★追加：全体商品ランキング（同順位対応）
 # ------------------------
 @tree.command(name="bay")
 async def bay(interaction):
@@ -528,8 +528,19 @@ async def bay(interaction):
     ranking = sorted(all_items.items(), key=lambda x: x[1], reverse=True)
 
     text = "📊【全体商品ランキング】\n\n"
-    for i, (item, qty) in enumerate(ranking, start=1):
-        text += f"{i}位：{item} ×{qty}個\n"
+
+    prev_qty = None
+    rank = 0
+    display_rank = 0
+
+    for item, qty in ranking:
+        rank += 1
+
+        if qty != prev_qty:
+            display_rank = rank
+            prev_qty = qty
+
+        text += f"{display_rank}位：{item} ×{qty}個\n"
 
     await interaction.response.send_message(text)
 
