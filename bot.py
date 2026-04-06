@@ -285,6 +285,8 @@ class OrderView(discord.ui.View):
             return False
 
         if cid=="confirm":
+            await interaction.response.defer()  # ←絶対必要
+
             uid=str(interaction.user.id)
             init_user(interaction.user)
 
@@ -319,8 +321,17 @@ class OrderView(discord.ui.View):
                     f"請求:{yen(total)}\n原価:{yen(cost)}\n利益:{yen(profit)}\n給料:{yen(worker)}\n```"
                 )
 
-            await interaction.message.delete()
-            return False
+    # ------------------------
+    # ★ここがポイント（リセット）
+    # ------------------------
+    self.cart = {}
+
+    await interaction.edit_original_response(
+        content="✅ 注文を確定しました\n\n🛒 カートをリセットしました",
+        view=OrderView(self.page, self.cart)
+    )
+
+    return False
 
         return True
 
