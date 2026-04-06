@@ -191,7 +191,7 @@ def split_menu(page):
     return dict(CATEGORY_LIST[:4] if page==0 else CATEGORY_LIST[4:])
 
 # ------------------------
-# 注文UI（そのまま）
+# 注文UI（★修正済）
 # ------------------------
 class AmountModal(discord.ui.Modal):
     def __init__(self,view,item):
@@ -285,7 +285,7 @@ class OrderView(discord.ui.View):
             return False
 
         if cid=="confirm":
-            await interaction.response.defer()  # ←絶対必要
+            await interaction.response.defer()
 
             uid=str(interaction.user.id)
             init_user(interaction.user)
@@ -321,22 +321,19 @@ class OrderView(discord.ui.View):
                     f"請求:{yen(total)}\n原価:{yen(cost)}\n利益:{yen(profit)}\n給料:{yen(worker)}\n```"
                 )
 
-    # ------------------------
-    # ★ここがポイント（リセット）
-    # ------------------------
-    self.cart = {}
+            self.cart={}
 
-    await interaction.edit_original_response(
-        content="✅ 注文を確定しました\n\n🛒 カートをリセットしました",
-        view=OrderView(self.page, self.cart)
-    )
+            await interaction.edit_original_response(
+                content="✅ 注文を確定しました\n\n🛒 カートをリセットしました",
+                view=OrderView(self.page,self.cart)
+            )
 
-    return False
+            return False
 
         return True
 
 # ------------------------
-# 勤務UI（修正済）
+# 勤務UI（そのまま）
 # ------------------------
 class WorkView(discord.ui.View):
     def __init__(self):
@@ -520,7 +517,7 @@ async def backup(interaction):
         await interaction.response.send_message(f"エラー: {e}", ephemeral=True)
 
 # ------------------------
-# ★追加：全体商品ランキング（同順位対応）
+# ★全体商品ランキング
 # ------------------------
 @tree.command(name="buy")
 async def buy(interaction):
@@ -531,10 +528,7 @@ async def buy(interaction):
 
     for u in data.values():
         for item, qty in u.get("items", {}).items():
-            if item in all_items:
-                all_items[item] += qty
-            else:
-                all_items[item] = qty
+            all_items[item] = all_items.get(item, 0) + qty
 
     ranking = sorted(all_items.items(), key=lambda x: x[1], reverse=True)
 
@@ -546,11 +540,9 @@ async def buy(interaction):
 
     for item, qty in ranking:
         rank += 1
-
         if qty != prev_qty:
             display_rank = rank
             prev_qty = qty
-
         text += f"{display_rank}位：{item} ×{qty}個\n"
 
     await interaction.response.send_message(text)
