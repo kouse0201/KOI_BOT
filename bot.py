@@ -392,25 +392,37 @@ class OrderView(discord.ui.View):
            
             now = datetime.now(JST)
             day = now.strftime("%Y-%m-%d")
-
+            
+            
             for cat in MENU:
                 for item,qty in self.cart.items():
                     if item in MENU[cat]:
                         d=MENU[cat][item]
+                        
                         total += d["price"] * qty
                         cost  += d["cost"] * qty
+                        
                         profit_raw = (d["price"] - d["cost"]) * qty
                         worker += int((d["price"] - d["cost"]) * 0.7) * qty
+                        
                         text += f"{item} ×{qty}\n"
-                         # ★移動販売記録
+                        
+                        # ★移動販売ログ（商品別）
                         if d.get("mobile"):
                             if "mobile_log" not in data[uid]:
                                 data[uid]["mobile_log"] = {}
-                           
+                                
                             if day not in data[uid]["mobile_log"]:
-                                data[uid]["mobile_log"][day] = {"qty":0,"sales":0}
-                            data[uid]["mobile_log"][day]["qty"] += qty
-                            data[uid]["mobile_log"][day]["sales"] += profit_raw
+                                data[uid]["mobile_log"][day] = {}
+                                
+                            if item not in data[uid]["mobile_log"][day]:
+                                data[uid]["mobile_log"][day][item] = {
+                                    "qty":0,
+                                    "sales":0
+                                    }
+                                    
+                            data[uid]["mobile_log"][day][item]["qty"] += qty
+                            data[uid]["mobile_log"][day][item]["sales"] += profit_raw
 
 
             profit=total-cost-worker
@@ -589,24 +601,44 @@ async def paying(interaction,member:discord.Member):
 @tree.command(name="payall")
 async def payall(interaction):
     total = sum(u.get("pay",0) for u in data.values())
-    await interaction.response.send_message(f"全員の給料合計：{yen(total)}")
+    await interaction.response.send_message(
+        f"全員の給料合計：{yen(total)}",
+        ephemeral=True
+    )
 
 @tree.command(name="mobilesales")
 async def mobilesales(interaction):
     result = {}
 
     for u in data.values():
-        for day,log in u.get("mobile_log",{}).items():
+        for day, items in u.get("mobile_log", {}).items():
+
             if day not in result:
-                result[day]={"qty":0,"sales":0}
-            result[day]["qty"] += log["qty"]
-            result[day]["sales"] += log["sales"]
+                result[day] = {}
 
-    text="📦移動販売売上\n\n"
+            for item, log in items.items():
+                if item not in result[day]:
+                    result[day][item] = {"qty":0,"sales":0}
+
+                result[day][item]["qty"] += log["qty"]
+                result[day][item]["sales"] += log["sales"]
+
+    text = "📦移動販売売上（商品別）\n\n"
+
     for day in sorted(result.keys()):
-        text += f"{day}\n 個数:{result[day]['qty']} 売上:{yen(result[day]['sales'])}\n\n"
+        text += f"【{day}】\n"
 
-    await interaction.response.send_message(text)
+        total_qty = 0
+        total_sales = 0
+
+        for item, log in result[day].items():
+            text += f"{item}：{log['qty']}個 / {yen(log['sales'])}\n"
+            total_qty += log["qty"]
+            total_sales += log["sales"]
+
+        text += f"▶ 合計：{total_qty}個 / {yen(total_sales)}\n\n"
+
+    await interaction.response.send_message(text, ephemeral=True)
 
 @tree.command(name="edittime")
 async def edittime(interaction,member:discord.Member,minutes:int):
@@ -689,7 +721,7 @@ async def buy(interaction):
             prev_qty = qty
         text += f"{display_rank}位：{item} ×{qty}個\n"
 
-    await interaction.response.send_message(text)
+    await interaction.response.send_message(text, ephemeral=True)
 
 # ------------------------
 # 起動
