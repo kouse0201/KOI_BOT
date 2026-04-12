@@ -45,7 +45,11 @@ def init_user(user):
         "total_time":0,
         "history":[],
         "pay":0,
-        "sales":0,
+
+        # ★追加
+        "sales":0,        # ←未受取売上
+        "total_sales":0,  # ←総売上
+
         "items":{}
     }
 
@@ -260,19 +264,19 @@ MENU = {
         "恋したあの人(販売停止)":{"price":7000,"cost":1500},
     },
     "移動販売メニュー":{
-        "いっぱい飲みにKOIよセット":{"price":13000,"cost":5250},
-        "温泉麦酒KOI心":{"price":6000,"cost":2250},
-        "焼き鳥盛り合わせ":{"price":9000,"cost":3000},
-        "がつ盛り焼きそば":{"price":6500,"cost":1750},
-        "すき焼き御膳":{"price":30000,"cost":12000},
-        "濃い黒たまご":{"price":6500,"cost":2000},
-        "ブレンド珈琲饅頭(PIPEDOWN-South-)":{"price":100000,"cost":27500},
+        "いっぱい飲みにKOIよセット":{"price":13000,"cost":5250,"mobile":True},
+        "温泉麦酒KOI心":{"price":6000,"cost":2250,"mobile":True},
+        "焼き鳥盛り合わせ":{"price":9000,"cost":3000,"mobile":True},
+        "がつ盛り焼きそば":{"price":6500,"cost":1750,"mobile":True},
+        "すき焼き御膳":{"price":30000,"cost":12000,"mobile":True},
+        "濃い黒たまご":{"price":6500,"cost":2000,"mobile":True},
+        "ブレンド珈琲饅頭(PIPEDOWN-South-)":{"price":100000,"cost":27500,"mobile":True},
     },
     "イベントメニュー":{
-        "田中さんのりんご飴":{"price":7100,"cost":2375},
-        "KOIいちごみるく":{"price":5900,"cost":2625},
-        "温泉のお香":{"price":6300,"cost":2000},
-        "よくばりプリンパフェ":{"price":10000,"cost":2500},
+        "田中さんのりんご飴":{"price":7100,"cost":2375,"mobile":True},
+        "KOIいちごみるく":{"price":5900,"cost":2625,"mobile":True},
+        "温泉のお香":{"price":6300,"cost":2000,"mobile":True},
+        "よくばりプリンパフェ":{"price":10000,"cost":2500,"mobile":True},
     }
 }
 
@@ -385,20 +389,35 @@ class OrderView(discord.ui.View):
             cost=0
             worker=0
             text=""
+           
+            now = datetime.now(JST)
+            day = now.strftime("%Y-%m-%d")
 
             for cat in MENU:
                 for item,qty in self.cart.items():
                     if item in MENU[cat]:
                         d=MENU[cat][item]
-                        total+=d["price"]*qty
-                        cost+=d["cost"]*qty
-                        worker+=int((d["price"]-d["cost"])*0.7)*qty
-                        text+=f"{item} ×{qty}\n"
+                        total += d["price"] * qty
+                        cost  += d["cost"] * qty
+                        profit_raw = (d["price"] - d["cost"]) * qty
+                        worker += int((d["price"] - d["cost"]) * 0.7) * qty
+                        text += f"{item} ×{qty}\n"
+                         # ★移動販売記録
+                        if d.get("mobile"):
+                            if "mobile_log" not in data[uid]:
+                                data[uid]["mobile_log"] = {}
+                           
+                            if day not in data[uid]["mobile_log"]:
+                                data[uid]["mobile_log"][day] = {"qty":0,"sales":0}
+                            data[uid]["mobile_log"][day]["qty"] += qty
+                            data[uid]["mobile_log"][day]["sales"] += profit_raw
+
 
             profit=total-cost-worker
 
-            data[uid]["sales"]+=(total-cost)
-            data[uid]["pay"]+=worker
+            data[uid]["sales"] += (total-cost)        # 未受取
+            data[uid]["total_sales"] += (total-cost)  # 総売上
+            data[uid]["pay"] += worker
 
             for item,qty in self.cart.items():
                 data[uid]["items"][item]=data[uid]["items"].get(item,0)+qty
@@ -515,9 +534,11 @@ class WorkView(discord.ui.View):
         uid=str(interaction.user.id)
         u=data.get(uid,{})
         await interaction.response.send_message(
-            f"給料:{yen(u.get('pay',0))}\n売上:{yen(u.get('sales',0))}",
+            f"給料:{yen(u.get('pay',0))}\n"
+            f"売上:{yen(u.get('sales',0))}\n"
+            f"総売上:{yen(u.get('total_sales',0))}",
             ephemeral=True
-        )
+            )
 
 # ------------------------
 # コマンド
@@ -559,9 +580,33 @@ async def time(interaction, member:discord.Member):
 async def paying(interaction,member:discord.Member):
     u=data.get(str(member.id),{})
     await interaction.response.send_message(
-        f"給料:{yen(u.get('pay',0))} 売上:{yen(u.get('sales',0))}",
+        f"給料:{yen(u.get('pay',0))}\n"
+        f"売上:{yen(u.get('sales',0))}\n"
+        f"総売上:{yen(u.get('total_sales',0))}",
         ephemeral=True
     )
+
+@tree.command(name="payall")
+async def payall(interaction):
+    total = sum(u.get("pay",0) for u in data.values())
+    await interaction.response.send_message(f"全員の給料合計：{yen(total)}")
+
+@tree.command(name="mobilesales")
+async def mobilesales(interaction):
+    result = {}
+
+    for u in data.values():
+        for day,log in u.get("mobile_log",{}).items():
+            if day not in result:
+                result[day]={"qty":0,"sales":0}
+            result[day]["qty"] += log["qty"]
+            result[day]["sales"] += log["sales"]
+
+    text="📦移動販売売上\n\n"
+    for day in sorted(result.keys()):
+        text += f"{day}\n 個数:{result[day]['qty']} 売上:{yen(result[day]['sales'])}\n\n"
+
+    await interaction.response.send_message(text)
 
 @tree.command(name="edittime")
 async def edittime(interaction,member:discord.Member,minutes:int):
@@ -595,7 +640,11 @@ async def resettime(interaction,member:discord.Member):
 async def resetpaying(interaction,member:discord.Member):
     init_user(member)
     uid=str(member.id)
+
     data[uid]["pay"]=0
+    data[uid]["sales"]=0
+    data[uid]["total_sales"]=0
+
     save_data(data)
     await interaction.response.send_message("OK",ephemeral=True)
 
@@ -613,13 +662,17 @@ async def backup(interaction):
 @tree.command(name="buy")
 async def buy(interaction):
     all_items = {}
-    for cat in MENU.values():
-        for item in cat.keys():
-            all_items[item] = 0
+
+    for cat,items in MENU.items():
+        for item,data_item in items.items():
+            if data_item.get("mobile") or data_item.get("event"):
+                continue
+            all_items[item]=0
 
     for u in data.values():
         for item, qty in u.get("items", {}).items():
-            all_items[item] = all_items.get(item, 0) + qty
+            if item in all_items:
+                all_items[item]+=qty
 
     ranking = sorted(all_items.items(), key=lambda x: x[1], reverse=True)
 
