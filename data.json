@@ -312,7 +312,6 @@
 
   "1094592548208656474": {
     "name": "水瀬そうた(はげちゃぺん)",
-    ,
     "start_time": null,
     "total_time": 0,
     "history": [],
@@ -329,7 +328,7 @@
 
   "1122462469659578398": {
     "name": "しまかぜ",
-    ,
+    "is_working": false,
     "start_time": null,
     "total_time": 0,
     "history": [],
@@ -341,7 +340,7 @@
 
   "1028624099209125989": {
     "name": "西川連(にっしー)",
-    ,
+    "is_working": false,
     "start_time": null,
     "total_time": 0,
     "history": [],
@@ -369,7 +368,7 @@
 
   "646666452916633621": {
     "name": "穴宮鏡花(かがみばな)",
-    ,
+    "is_working": false,
     "start_time": null,
     "total_time": 0,
     "history": [],
@@ -392,7 +391,7 @@
 
   "906899919871307786": {
     "name": "紫水ぴんく",
-    ,
+    "is_working": false,
     "start_time": null,
     "total_time": 0,
     "history": [],
