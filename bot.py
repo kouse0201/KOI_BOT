@@ -677,7 +677,6 @@ async def resetpaying(interaction,member:discord.Member):
 
     data[uid]["pay"]=0
     data[uid]["sales"]=0
-    data[uid]["total_sales"]=0
 
     save_data(data)
     await interaction.response.send_message("OK",ephemeral=True)
