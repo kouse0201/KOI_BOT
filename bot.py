@@ -271,6 +271,8 @@ MENU = {
         "すき焼き御膳":{"price":30000,"cost":12000,"mobile":True},
         "濃い黒たまご":{"price":6500,"cost":2000,"mobile":True},
         "ブレンド珈琲饅頭(PIPEDOWN-South-)":{"price":100000,"cost":27500,"mobile":True},
+        "しゅわしゅわラムネ":{"price":3000,"cost":1500,"mobile":True},
+        "ほかほか湯豆腐スープ":{"price":4500,"cost":2375,"mobile":True},
     },
     "イベントメニュー":{
         "田中さんのりんご飴":{"price":7100,"cost":2375,"mobile":True},
@@ -403,7 +405,7 @@ class OrderView(discord.ui.View):
                         cost  += d["cost"] * qty
                         
                         profit_raw = (d["price"] - d["cost"]) * qty
-                        worker += int((d["price"] - d["cost"]) * 0.7) * qty
+                        worker += int((d["price"] - d["cost"]) * 0.6) * qty
                         
                         text += f"{item} ×{qty}\n"
                         
