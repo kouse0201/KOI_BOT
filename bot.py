@@ -654,10 +654,12 @@ async def edittime(interaction,member:discord.Member,minutes:int):
 async def editpaying(interaction,member:discord.Member,target:str,amount:int):
     init_user(member)
     uid=str(member.id)
+
     if target=="給料":
-        data[uid]["pay"]=max(0,data[uid]["pay"]+amount)
+        data[uid]["pay"] += amount   # ←max削除
     elif target=="売上":
-        data[uid]["sales"]=max(0,data[uid]["sales"]+amount)
+        data[uid]["sales"] += amount  # ←max削除
+
     save_data(data)
     await interaction.response.send_message("OK",ephemeral=True)
 
