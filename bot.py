@@ -1084,7 +1084,7 @@ SEARCH_MENU = {
             使用速度 早,
             移動上昇 False
         },
-        KING'S PALETO[10回] {
+        KINGS PALETO[10回] {
             体力 0,
             アーマー 50,
             満腹 0,
