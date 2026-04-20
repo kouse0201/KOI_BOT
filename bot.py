@@ -5192,9 +5192,11 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters[key] = (select.values[0] == "あり")
+
+            new_view = SearchView(self.page, self.filters)
             await interaction.response.edit_message(
                 content=self.build_status(),   # ←追加
-                view=SearchView(self.page, self.filters)
+                view=new_view
             )
 
         select.callback = callback
