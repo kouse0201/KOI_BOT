@@ -5159,6 +5159,26 @@ class SearchView(discord.ui.View):
             self.add_item(discord.ui.Button(label="←戻る", style=discord.ButtonStyle.secondary, custom_id="prev"))
 
         self.add_item(discord.ui.Button(label="検索", style=discord.ButtonStyle.success, custom_id="search_btn"))
+    def build_status(self):
+        text = "【現在の条件】\n"
+
+        if not self.filters:
+            text += "なし"
+            return text
+
+        for k, v in self.filters.items():
+            if v is None:
+                continue
+
+            if v is True:
+                v = "あり"
+            elif v is False:
+                v = "なし"
+
+            text += f"{k}: {v}\n"
+
+        return text
+
 
     def make_select(self, key, row):
         select = discord.ui.Select(
@@ -5172,7 +5192,10 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters[key] = (select.values[0] == "あり")
-            await interaction.response.edit_message(view=SearchView(self.page, self.filters))
+            await interaction.response.edit_message(
+                content=self.build_status(),   # ←追加
+                view=SearchView(self.page, self.filters)
+            )
 
         select.callback = callback
         return select
