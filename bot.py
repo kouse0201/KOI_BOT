@@ -963,9 +963,7 @@ class SearchView(discord.ui.View):
 
 @tree.command(name="searchmenu1")
 async def searchmenu1(interaction):
-    await interaction.response.defer(ephemeral=True)
-
-    await interaction.followup.send(
+    await interaction.response.send_message(
         "条件を選択して確定",
         view=SearchView(),
         ephemeral=True
