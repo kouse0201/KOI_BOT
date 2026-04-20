@@ -882,9 +882,6 @@ class SearchView(discord.ui.View):
         ))
 
     def build_status(self):
-        if not self.filters:
-            return "【現在の条件】なし"
-
         order = [
             "体力","アーマー","満腹","水分","ストレス",
             "使用速度","移動上昇"
@@ -894,6 +891,9 @@ class SearchView(discord.ui.View):
         for k in order:
             if k in self.filters:
                 text += f"{k}: {self.filters[k]}\n"
+            
+            else:
+                text += f"{k}: なし\n"
 
 
         return text
