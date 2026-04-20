@@ -1821,7 +1821,7 @@ SEARCH_MENU = {
             使用速度 早,
             移動上昇 False
         },
-        スラぷるん∞ゼリー {
+        "スラぷるん∞ゼリー" {
             体力 0,
             アーマー 0,
             満腹 0,
@@ -4580,7 +4580,7 @@ SEARCH_MENU = {
             移動上昇 False
         },
     }
-
+}
 def format_effects(eff):
     text = ""
     for k, v in eff.items():
