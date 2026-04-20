@@ -5265,30 +5265,7 @@ class SearchView(discord.ui.View):
 
         return True
 
-def search_items(filters, strict=False):
-    results = []
 
-    for shop, items in DATA.items():
-        for name, eff in items.items():
-
-            match = True
-
-            # ▼移動上昇
-            if "移動上昇" in filters:
-                val = eff.get("移動上昇", False)
-
-                if val in ["True", "true", 1]:
-                    val = True
-                elif val in ["False", "false", 0]:
-                    val = False
-
-                if val != filters["移動上昇"]:
-                    match = False
-
-            if match:
-                results.append((shop, name, eff))
-
-    return results
 
 
 @tree.command(name="searchmenu1") 
