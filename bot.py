@@ -847,15 +847,16 @@ async def buy(interaction):
 
 class SearchView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None)  # ← 無限にする
+        super().__init__(timeout=None)
         self.filters = {}
 
-    # ------------------------
-    # 各フィルタ
-    # ------------------------
     @discord.ui.select(
         placeholder="体力",
-        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+        options=[
+            discord.SelectOption(label="指定なし"),
+            discord.SelectOption(label="あり")
+        ],
+        row=0
     )
     async def hp(self, interaction, select):
         if select.values[0] == "あり":
@@ -865,7 +866,11 @@ class SearchView(discord.ui.View):
 
     @discord.ui.select(
         placeholder="アーマー",
-        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+        options=[
+            discord.SelectOption(label="指定なし"),
+            discord.SelectOption(label="あり")
+        ],
+        row=0
     )
     async def armor(self, interaction, select):
         if select.values[0] == "あり":
@@ -875,7 +880,11 @@ class SearchView(discord.ui.View):
 
     @discord.ui.select(
         placeholder="満腹",
-        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+        options=[
+            discord.SelectOption(label="指定なし"),
+            discord.SelectOption(label="あり")
+        ],
+        row=1
     )
     async def food(self, interaction, select):
         if select.values[0] == "あり":
@@ -885,7 +894,11 @@ class SearchView(discord.ui.View):
 
     @discord.ui.select(
         placeholder="水分",
-        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+        options=[
+            discord.SelectOption(label="指定なし"),
+            discord.SelectOption(label="あり")
+        ],
+        row=1
     )
     async def water(self, interaction, select):
         if select.values[0] == "あり":
@@ -895,7 +908,11 @@ class SearchView(discord.ui.View):
 
     @discord.ui.select(
         placeholder="ストレス",
-        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+        options=[
+            discord.SelectOption(label="指定なし"),
+            discord.SelectOption(label="あり")
+        ],
+        row=2
     )
     async def stress(self, interaction, select):
         if select.values[0] == "あり":
@@ -909,7 +926,8 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="普"),
             discord.SelectOption(label="早"),
             discord.SelectOption(label="遅")
-        ]
+        ],
+        row=2
     )
     async def speed(self, interaction, select):
         self.filters["使用速度"] = select.values[0]
@@ -921,12 +939,43 @@ class SearchView(discord.ui.View):
         options=[
             discord.SelectOption(label="有"),
             discord.SelectOption(label="無")
-        ]
+        ],
+        row=3
     )
     async def move(self, interaction, select):
         self.filters["移動上昇"] = True if select.values[0] == "有" else False
         await interaction.response.defer()
         await interaction.message.edit(view=self)
+
+    @discord.ui.button(label="検索", style=discord.ButtonStyle.success, row=4)
+    async def search(self, interaction, button):
+        await interaction.response.defer(ephemeral=True)
+
+        results = search_items(self.filters)
+
+        if not results:
+            await interaction.followup.send("該当なし", ephemeral=True)
+            return
+
+        text = "🔍【検索結果】\n\n"
+
+        for shop, name, eff in results:
+            text += f"◆【{shop}】{name}\n"
+
+            for key in ["体力","アーマー","満腹","水分","ストレス"]:
+                val = eff.get(key, 0)
+                if val != 0:
+                    text += f"{key}：{val}\n"
+
+            if eff.get("使用速度"):
+                text += f"使用速度：{eff.get('使用速度')}\n"
+
+            if eff.get("移動上昇") is not None:
+                text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
+
+            text += "\n"
+
+        await interaction.followup.send(text, ephemeral=True)
 
     # ------------------------
     # ★確定ボタン
