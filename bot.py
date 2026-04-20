@@ -316,6 +316,7 @@ SEARCH_MENU = {
             "使用速度": "早",
             "移動上昇": True
         },
+    }
     "BAYVIEWLODGE": {
         "カヨペ牛のローストビーフ丼": {
             "体力": 0,
@@ -326,6 +327,8 @@ SEARCH_MENU = {
             "使用速度": "普",
             "移動上昇": False
         }
+    
+    
     }
 }
 
@@ -936,7 +939,7 @@ async def searchmenu2(
         text += f"【{shop}】{name}\n{format_effects(eff)}\n\n"
 
     await interaction.response.send_message(text, ephemeral=True)
-    
+
 # ------------------------
 # 起動
 # ------------------------
