@@ -5226,34 +5226,43 @@ class SearchView(discord.ui.View):
         if cid == "search_btn":
             await interaction.response.defer(ephemeral=True)
 
-            results = search_items(self.filters)
-
+            filters = dict(self.filters)
+            results = search_items(filters)
+            
+            new_view = SearchView(page=0, filters={})
+            
+            await interaction.edit_original_response(
+                content=new_view.build_status(),
+                view=new_view
+            )
+            
+            self.filters.clear()
+            
             if not results:
                 await interaction.followup.send("該当なし", ephemeral=True)
                 return False
-
+                
             embeds = []
-
+            
             for shop, name, eff in results:
                 embed = discord.Embed(title=f"◆【{shop}】{name}")
-
+                
                 text = ""
-
+                
                 for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
                     val = eff.get(key, 0)
                     if val != 0:
                         text += f"{key}：{val}\n"
 
-                if eff.get("使用速度"):
-                    text += f"使用速度：{eff.get('使用速度')}\n"
+                    if eff.get("使用速度"):
+                        text += f"使用速度：{eff.get('使用速度')}\n"
+                        
+                    if eff.get("移動上昇") is not None:
+                        text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
 
-                if eff.get("移動上昇") is not None:
-                    text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
+                    embed.description = text or "効果なし"
+                    embeds.append(embed)
 
-                embed.description = text or "効果なし"
-                embeds.append(embed)
-
-            # 🔥10個制限対応
             for i in range(0, len(embeds), 10):
                 await interaction.followup.send(
                     content=f"{i//10+1}ページ目",
