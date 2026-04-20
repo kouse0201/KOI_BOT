@@ -282,6 +282,116 @@ MENU = {
     }
 }
 
+# ------------------------
+# 効能付きメニュー（検索用）
+# ------------------------
+SEARCH_MENU = {
+    "温泉KOI": {
+        "特製KOI定食": {
+            "体力": 0,
+            "アーマー": 20,
+            "満腹": 35,
+            "水分": 20,
+            "ストレス": 20,
+            "使用速度": "遅",
+            "移動上昇": False
+        },
+        "KOIばななみるく": {
+            "体力": 0,
+            "アーマー": 35,
+            "満腹": 0,
+            "水分": 10,
+            "ストレス": 0,
+            "使用速度": "早",
+            "移動上昇": False
+        }
+    },
+    "和菓子屋": {
+        "焼き鳥盛り合わせ": {
+            "体力": 0,
+            "アーマー": 0,
+            "満腹": 25,
+            "水分": 0,
+            "ストレス": 35,
+            "使用速度": "早",
+            "移動上昇": True
+        },
+    "BAYVIEWLODGE": {
+        "カヨペ牛のローストビーフ丼": {
+            "体力": 0,
+            "アーマー": 0,
+            "満腹": 50,
+            "水分": 0,
+            "ストレス": 60,
+            "使用速度": "普",
+            "移動上昇": False
+        }
+    }
+}
+
+def format_effects(eff):
+    text = ""
+    for k, v in eff.items():
+        if k in ["体力","アーマー","満腹","水分","ストレス"]:
+            if v == 0:
+                continue
+        if k == "移動上昇":
+            v = "有" if v else "無"
+        text += f"{k}:{v} "
+    return text.strip()
+
+def search_items(filters, strict=False):
+    results = []
+
+    for shop, items in SEARCH_MENU.items():
+        for name, eff in items.items():
+
+            ok = True
+
+            # 店舗名
+            if filters.get("shop"):
+                if filters["shop"] not in shop:
+                    continue
+
+            # 商品名
+            if filters.get("name"):
+                if filters["name"] not in name:
+                    continue
+
+            # 数値系
+            for key in ["体力","アーマー","満腹","水分","ストレス"]:
+                val = eff.get(key)
+
+                # ★0は存在しない扱い
+                if val == 0:
+                    if key in filters:
+                        ok = False
+                        break
+                    continue
+
+                if key in filters:
+                    if strict:
+                        if val != filters[key]:
+                            ok = False
+                            break
+
+            if not ok:
+                continue
+
+            # 使用速度
+            if filters.get("使用速度"):
+                if eff.get("使用速度") != filters["使用速度"]:
+                    continue
+
+            # 移動上昇
+            if filters.get("移動上昇") is not None:
+                if eff.get("移動上昇") != filters["移動上昇"]:
+                    continue
+
+            results.append((shop, name, eff))
+
+    return results
+
 CATEGORY_LIST=list(MENU.items())
 
 def split_menu(page):
@@ -726,6 +836,107 @@ async def buy(interaction):
 
     await interaction.response.send_message(text, ephemeral=True)
 
+
+class SearchView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=180)
+        self.filters = {}
+
+    @discord.ui.select(
+        placeholder="使用速度",
+        options=[
+            discord.SelectOption(label="普"),
+            discord.SelectOption(label="早"),
+            discord.SelectOption(label="遅")
+        ]
+    )
+    async def speed(self, interaction, select):
+        self.filters["使用速度"] = select.values[0]
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="移動上昇",
+        options=[
+            discord.SelectOption(label="有"),
+            discord.SelectOption(label="無")
+        ]
+    )
+    async def move(self, interaction, select):
+        self.filters["移動上昇"] = True if select.values[0] == "有" else False
+        await interaction.response.defer()
+
+    @discord.ui.button(label="確定", style=discord.ButtonStyle.success)
+    async def confirm(self, interaction, button):
+
+        results = search_items(self.filters)
+
+        if not results:
+            await interaction.response.send_message("見つからない", ephemeral=True)
+            return
+
+        text = ""
+        for shop, name, eff in results:
+            text += f"【{shop}】{name}\n{format_effects(eff)}\n\n"
+
+        await interaction.response.send_message(text, ephemeral=True)
+
+
+@tree.command(name="searchmenu1")
+async def searchmenu1(interaction):
+    await interaction.response.send_message(
+        "条件を選択して確定",
+        view=SearchView(),
+        ephemeral=True
+    )
+@tree.command(name="searchmenu2")
+async def searchmenu2(
+    interaction,
+    店舗名: str = None,
+    商品名: str = None,
+    体力: int = None,
+    アーマー: int = None,
+    満腹: int = None,
+    水分: int = None,
+    ストレス: int = None,
+    使用速度: str = None,
+    移動上昇: str = None
+):
+
+    filters = {}
+
+    if 店舗名:
+        filters["shop"] = 店舗名
+    if 商品名:
+        filters["name"] = 商品名
+
+    for key, val in {
+        "体力":体力,
+        "アーマー":アーマー,
+        "満腹":満腹,
+        "水分":水分,
+        "ストレス":ストレス
+    }.items():
+        if val is not None:
+            filters[key] = val
+
+    if 使用速度:
+        filters["使用速度"] = 使用速度
+
+    if 移動上昇:
+        filters["移動上昇"] = True if 移動上昇 == "有" else False
+
+    results = search_items(filters, strict=True)
+
+    if not results:
+        await interaction.response.send_message("見つからない", ephemeral=True)
+        return
+
+    text = ""
+    for shop, name, eff in results:
+        text += f"【{shop}】{name}\n{format_effects(eff)}\n\n"
+
+    await interaction.response.send_message(text, ephemeral=True)
+    
 # ------------------------
 # 起動
 # ------------------------
