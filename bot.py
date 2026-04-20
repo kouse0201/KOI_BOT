@@ -884,10 +884,16 @@ class SearchView(discord.ui.View):
     def build_status(self):
         if not self.filters:
             return "【現在の条件】なし"
-
+        
         text = "【現在の条件】\n"
+
         for k, v in self.filters.items():
+            
+            if k == "移動上昇":
+                v = "有" if v else "無"
+            
             text += f"{k}: {v}\n"
+
         return text
 
     def make_select(self, key, row):
@@ -928,6 +934,7 @@ class SearchView(discord.ui.View):
         async def callback(interaction):
             self.filters["使用速度"] = select.values[0]
             await interaction.response.edit_message(
+                content=self.build_status(),
                 view=SearchView(self.page, self.filters)
             )
 
@@ -974,10 +981,13 @@ class SearchView(discord.ui.View):
             filters = dict(self.filters)
             results = search_items(filters)
 
-            self.filters = {}
+            self.filters.clear()
+
+            new_view = SearchView(page=0, filters={})
 
             await interaction.edit_original_response(
-                view=SearchView()
+                content=new_view.build_status(),  # ←ここ重要
+                view=new_view
             )
 
             if not results:
