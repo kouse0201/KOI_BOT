@@ -870,7 +870,7 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="指定なし"),
             discord.SelectOption(label="あり")
         ],
-        row=0
+        row=1
     )
     async def armor(self, interaction, select):
         if select.values[0] == "あり":
@@ -884,7 +884,7 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="指定なし"),
             discord.SelectOption(label="あり")
         ],
-        row=1
+        row=2
     )
     async def food(self, interaction, select):
         if select.values[0] == "あり":
@@ -898,7 +898,7 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="指定なし"),
             discord.SelectOption(label="あり")
         ],
-        row=1
+        row=3
     )
     async def water(self, interaction, select):
         if select.values[0] == "あり":
@@ -912,7 +912,7 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="指定なし"),
             discord.SelectOption(label="あり")
         ],
-        row=2
+        row=4
     )
     async def stress(self, interaction, select):
         if select.values[0] == "あり":
@@ -927,7 +927,7 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="早"),
             discord.SelectOption(label="遅")
         ],
-        row=2
+        row=5
     )
     async def speed(self, interaction, select):
         self.filters["使用速度"] = select.values[0]
@@ -940,14 +940,14 @@ class SearchView(discord.ui.View):
             discord.SelectOption(label="有"),
             discord.SelectOption(label="無")
         ],
-        row=3
+        row=6
     )
     async def move(self, interaction, select):
         self.filters["移動上昇"] = True if select.values[0] == "有" else False
         await interaction.response.defer()
         await interaction.message.edit(view=self)
 
-    @discord.ui.button(label="検索", style=discord.ButtonStyle.success, row=4)
+    @discord.ui.button(label="検索", style=discord.ButtonStyle.success, row=7)
     async def search(self, interaction, button):
         await interaction.response.defer(ephemeral=True)
 
