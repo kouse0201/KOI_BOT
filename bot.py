@@ -912,7 +912,7 @@ class SearchView(discord.ui.View):
             if select.values[0] == "あり":
                 self.filters[key] = True
             else:
-                self.filters.pop(key, None)
+                self.filters[key] = False
 
             await interaction.response.edit_message(
                 content=self.build_status(),
@@ -985,7 +985,8 @@ class SearchView(discord.ui.View):
             filters = dict(self.filters)
             
             if "移動上昇" in filters:
-                filters["移動上昇"] = True if filters["移動上昇"] == "有" else False
+                if eff.get("移動上昇") != filters["移動上昇"]:
+                    continue
             
             results = search_items(filters)
 
