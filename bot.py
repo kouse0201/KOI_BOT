@@ -886,27 +886,30 @@ class SearchView(discord.ui.View):
             "体力","アーマー","満腹","水分","ストレス",
             "使用速度","移動上昇"
         ]
-
+        
+        
         text = "【現在の条件】\n"
         shown = False
-        
+
         for k in order:
             if k not in self.filters:
                 continue
 
             val = self.filters[k]
+
+            if val is None:
+                continue
+                
             if val is True:
                 val = "条件指定"
-
-            if val is None or val is False:
-                continue
-            
+                
             text += f"{k}: {val}\n"
             shown = True
-        
+            
         if not shown:
             text += "なし\n"
-            return text
+            
+        return text
 
 
 
