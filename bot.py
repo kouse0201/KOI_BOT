@@ -205,14 +205,19 @@ async def update(self, interaction):
 
     text += f"\n💰合計：{yen(self.calc_total())}"
 
-    # ★ここが最終安定版
-    if interaction.response.is_done():
+    try:
+        if interaction.response.is_done():
+            await interaction.message.edit(
+                content=text,
+                view=OrderView(self.page, self.cart)
+            )
+        else:
+            await interaction.response.edit_message(
+                content=text,
+                view=OrderView(self.page, self.cart)
+            )
+    except:
         await interaction.message.edit(
-            content=text,
-            view=OrderView(self.page, self.cart)
-        )
-    else:
-        await interaction.response.edit_message(
             content=text,
             view=OrderView(self.page, self.cart)
         )
