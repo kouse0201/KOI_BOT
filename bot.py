@@ -197,19 +197,25 @@ def get_working_count():
     return sum(1 for u in data.values() if u.get("is_working"))
 
 @tasks.loop(seconds=10)
-async def update_status():
-    count = get_working_count()
-    if count > 0:
-        await bot.change_presence(
-            status=discord.Status.online,
-            activity=discord.Game(f"開店中({count}人)")
+async def update(self, interaction):
+    text = "【注文中】\n"
+
+    for k, v in self.cart.items():
+        text += f"{k} ×{v}\n"
+
+    text += f"\n💰合計：{yen(self.calc_total())}"
+
+    # ★ここが最終安定版
+    if interaction.response.is_done():
+        await interaction.message.edit(
+            content=text,
+            view=OrderView(self.page, self.cart)
         )
     else:
-        await bot.change_presence(
-            status=discord.Status.idle,
-            activity=discord.Game("閉店中")
+        await interaction.response.edit_message(
+            content=text,
+            view=OrderView(self.page, self.cart)
         )
-
 # ------------------------
 # メニュー（そのまま）
 # ------------------------
