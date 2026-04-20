@@ -364,18 +364,18 @@ def search_items(filters, strict=False):
             # 数値系チェック
             for key in ["体力","アーマー","満腹","水分","ストレス"]:
                 val = eff.get(key, 0)
-
-                # UI検索（「あり」）
+                
+                # UI検索（あり）
                 if filters.get(key) is True:
                     if val == 0:
-                        ok = False
-                        break
+                    ok = False
+                    break
 
-                # strict検索（完全一致）
-                if strict and key in filters:
-                    if val != filters[key]:
-                        ok = False
-                        break
+            # strict検索（完全一致）
+            elif strict and key in filters:
+                if val != filters[key]:
+                    ok = False
+                    break
 
                 # 通常検索（0は除外）
                 if not strict and key in filters:
