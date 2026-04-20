@@ -989,14 +989,14 @@ class SearchView(discord.ui.View):
             
             results = search_items(filters)
 
-            self.filters.clear()
-
             new_view = SearchView(page=0, filters={})
 
             await interaction.edit_original_response(
-                content=new_view.build_status(),  # ←ここ重要
+                content=new_view.build_status(),
                 view=new_view
             )
+            
+            self.filters.clear()
 
             if not results:
                 await interaction.followup.send("該当なし", ephemeral=True)
