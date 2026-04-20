@@ -1042,13 +1042,6 @@ class SearchView(discord.ui.View):
         return True
 
         
-@tree.command(name="searchmenu1")
-async def searchmenu1(interaction):
-    await interaction.response.send_message(
-        "条件を選択して確定",
-        view=SearchView(),
-        ephemeral=True
-    )
 @tree.command(name="searchmenu2")
 async def searchmenu2(
     interaction,
@@ -1071,11 +1064,11 @@ async def searchmenu2(
         filters["name"] = 商品名
 
     for key, val in {
-        "体力":体力,
-        "アーマー":アーマー,
-        "満腹":満腹,
-        "水分":水分,
-        "ストレス":ストレス
+        "体力": 体力,
+        "アーマー": アーマー,
+        "満腹": 満腹,
+        "水分": 水分,
+        "ストレス": ストレス
     }.items():
         if val is not None:
             filters[key] = val
@@ -1092,38 +1085,37 @@ async def searchmenu2(
         await interaction.response.send_message("該当なし", ephemeral=True)
         return
 
-    results = search_items(filters, strict=True)
-    
-    if not results:
-        await interaction.response.send_message("該当なし", ephemeral=True)
-        return
-    
     embeds = []
-    
+
     for shop, name, eff in results:
+
         embed = discord.Embed(
             title=f"◆【{shop}】{name}",
             color=0x2b2d31
         )
-        
+
         text = ""
-        
+
+        # 数値系（まとめて1回だけ）
         for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
             val = eff.get(key, 0)
             if val != 0:
                 text += f"{key}：{val}\n"
-                
-            if eff.get("使用速度"):
-                text += f"使用速度：{eff.get('使用速度')}\n"
-                
-            if eff.get("移動上昇") is not None:
-                text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
-                
-            embed.description = text if text else "効果なし"
-            embeds.append(embed)
-            
-        await interaction.response.send_message(embeds=embeds, ephemeral=True)
-    
+
+        # 使用速度（1回だけ）
+        speed = eff.get("使用速度")
+        if speed:
+            text += f"使用速度：{speed}\n"
+
+        # 移動上昇（1回だけ）
+        move = eff.get("移動上昇")
+        if move is not None:
+            text += f"移動上昇：{'有' if move else '無'}\n"
+
+        embed.description = text if text else "効果なし"
+        embeds.append(embed)
+
+    await interaction.response.send_message(embeds=embeds, ephemeral=True)
 # ------------------------
 # 起動
 # ------------------------
