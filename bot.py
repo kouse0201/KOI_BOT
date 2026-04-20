@@ -2084,7 +2084,7 @@ SEARCH_MENU = {
             使用速度 普,
             移動上昇 False
         },
-        シイラのFish＆Chips {
+        "シイラのFish＆Chips" {
             体力 0,
             アーマー 25,
             満腹 30,
