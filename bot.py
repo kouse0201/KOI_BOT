@@ -409,10 +409,10 @@ def split_menu(page):
 # 注文UI
 # ------------------------
 class AmountModal(discord.ui.Modal):
-    def __init__(self,view,item):
+    def __init__(self, view, item):
         super().__init__(title=f"{item} 数量")
-        self.view_ref=view
-        self.item=item
+        self.view_ref = view
+        self.item = item
 
         self.amount = discord.ui.TextInput(label="数量", default="1")
         self.add_item(self.amount)
@@ -427,9 +427,11 @@ class AmountModal(discord.ui.Modal):
             return
 
         self.view_ref.cart[self.item] = qty
+
+        # 応答だけ通す（重要）
         await interaction.response.defer()
+
         await self.view_ref.update(interaction)
-        
         
 
 class CategorySelect(discord.ui.Select):
@@ -485,13 +487,25 @@ class OrderView(discord.ui.View):
                     total+=MENU[cat][item]["price"]*qty
         return total
 
-    async def update(self,interaction):
-        text="【注文中】\n"
-        for k,v in self.cart.items():
-            text+=f"{k} ×{v}\n"
-        text+=f"\n💰合計：{yen(self.calc_total())}"
+    async def update(self, interaction):
+        text = "【注文中】\n"
+        
+        for k, v in self.cart.items():
+            text += f"{k} ×{v}\n"
+            
+        text += f"\n💰合計：{yen(self.calc_total())}"
 
-        await interaction.response.edit_message(content=text,view=OrderView(self.page,self.cart))
+        # Modal対策（ここが重要）
+        try:
+            await interaction.response.edit_message(
+                content=text,
+                view=OrderView(self.page, self.cart)
+            )
+        except:
+            await interaction.message.edit(
+                content=text,
+                view=OrderView(self.page, self.cart)
+            )
 
     async def interaction_check(self,interaction):
         cid=interaction.data.get("custom_id")
