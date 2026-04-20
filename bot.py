@@ -852,29 +852,45 @@ class SearchView(discord.ui.View):
         self.filters = filters or {}
 
         # ------------------------
-        # ページ1（ステータス）
+        # ページ1
         # ------------------------
         if self.page == 0:
             self.add_item(self.make_select("体力", "体力", row=0))
             self.add_item(self.make_select("アーマー", "アーマー", row=1))
             self.add_item(self.make_select("満腹", "満腹", row=2))
             self.add_item(self.make_select("水分", "水分", row=3))
-            self.add_item(self.make_select("ストレス", "ストレス", row=4))
 
-            self.add_item(discord.ui.Button(label="次へ→", style=discord.ButtonStyle.secondary, custom_id="next", row=4))
+            self.add_item(discord.ui.Button(
+                label="次へ→",
+                style=discord.ButtonStyle.secondary,
+                custom_id="next",
+                row=4
+            ))
 
         # ------------------------
-        # ページ2（追加条件）
+        # ページ2
         # ------------------------
         else:
-            self.add_item(self.make_speed_select(row=0))
-            self.add_item(self.make_move_select(row=1))
+            self.add_item(self.make_select("ストレス", "ストレス", row=0))
+            self.add_item(self.make_speed_select(row=1))
+            self.add_item(self.make_move_select(row=2))
 
-            self.add_item(discord.ui.Button(label="←戻る", style=discord.ButtonStyle.secondary, custom_id="prev", row=4))
-            self.add_item(discord.ui.Button(label="検索", style=discord.ButtonStyle.success, custom_id="search", row=4))
+            self.add_item(discord.ui.Button(
+                label="←戻る",
+                style=discord.ButtonStyle.secondary,
+                custom_id="prev",
+                row=3
+            ))
+
+            self.add_item(discord.ui.Button(
+                label="検索",
+                style=discord.ButtonStyle.success,
+                custom_id="search",
+                row=4
+            ))
 
     # ------------------------
-    # Select生成（共通）
+    # 共通Select（あり/なし）
     # ------------------------
     def make_select(self, label, key, row):
         select = discord.ui.Select(
@@ -889,12 +905,18 @@ class SearchView(discord.ui.View):
         async def callback(interaction):
             if select.values[0] == "あり":
                 self.filters[key] = True
+            else:
+                self.filters.pop(key, None)
+
             await interaction.response.defer()
             await interaction.message.edit(view=SearchView(self.page, self.filters))
 
         select.callback = callback
         return select
 
+    # ------------------------
+    # 使用速度
+    # ------------------------
     def make_speed_select(self, row):
         select = discord.ui.Select(
             placeholder="使用速度",
@@ -914,6 +936,9 @@ class SearchView(discord.ui.View):
         select.callback = callback
         return select
 
+    # ------------------------
+    # 移動上昇
+    # ------------------------
     def make_move_select(self, row):
         select = discord.ui.Select(
             placeholder="移動上昇",
@@ -977,6 +1002,7 @@ class SearchView(discord.ui.View):
             return False
 
         return True
+        
 @tree.command(name="searchmenu1")
 async def searchmenu1(interaction):
     await interaction.response.send_message(
