@@ -856,17 +856,22 @@ class SearchView(discord.ui.View):
             self.add_item(self.make_select("アーマー", row=1))
             self.add_item(self.make_select("満腹", row=2))
             self.add_item(self.make_select("水分", row=3))
-            self.add_item(self.make_select("ストレス", row=4))
 
             self.add_item(discord.ui.Button(
                 label="次へ→",
                 style=discord.ButtonStyle.secondary,
                 custom_id="next"
             ))
+            self.add_item(discord.ui.Button(
+                label="検索",
+                style=discord.ButtonStyle.success,
+                custom_id="search_btn"
+            ))
 
         else:
-            self.add_item(self.make_speed(row=0))
-            self.add_item(self.make_move(row=1))
+            self.add_item(self.make_select("ストレス", row=0))
+            self.add_item(self.make_speed(row=1))
+            self.add_item(self.make_move(row=2))
 
             self.add_item(discord.ui.Button(
                 label="←戻る",
