@@ -5215,7 +5215,10 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters["使用速度"] = select.values[0]
-            await interaction.response.edit_message(view=SearchView(self.page, self.filters))
+            await interaction.response.edit_message(
+                content=self.build_status(),
+                content=self.build_status(),
+            )
 
         select.callback = callback
         return select
@@ -5232,7 +5235,10 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters["移動上昇"] = (select.values[0] == "有")
-            await interaction.response.edit_message(view=SearchView(self.page, self.filters))
+            await interaction.response.edit_message(
+                content=self.build_status(),
+                view=SearchView(self.page, self.filters)
+            )
 
         select.callback = callback
         return select
@@ -5354,28 +5360,33 @@ async def searchmenu2(
         return
 
     embeds = []
-
+    
     for shop, name, eff in results:
-
         embed = discord.Embed(
             title=f"◆【{shop}】{name}",
             color=0x2b2d31
         )
-
+        
         text = ""
 
-        # 数値系（まとめて1回だけ）
+        # ------------------------
+        # 数値系（1回だけ）
+        # ------------------------
         for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
             val = eff.get(key, 0)
             if val != 0:
                 text += f"{key}：{val}\n"
 
+        # ------------------------
         # 使用速度（1回だけ）
+        # ------------------------
         speed = eff.get("使用速度")
         if speed:
             text += f"使用速度：{speed}\n"
 
+        # ------------------------
         # 移動上昇（1回だけ）
+        # ------------------------
         move = eff.get("移動上昇")
         if move is not None:
             if move in [True, "True", "true", 1]:
@@ -5383,7 +5394,9 @@ async def searchmenu2(
             else:
                 text += "移動上昇：無\n"
 
-
+        # ------------------------
+        # 最終セット
+        # ------------------------
         embed.description = text if text else "効果なし"
         embeds.append(embed)
 
