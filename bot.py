@@ -1092,21 +1092,37 @@ async def searchmenu2(
         await interaction.response.send_message("該当なし", ephemeral=True)
         return
 
-    text = "🔍【検索結果】\n\n"
-
+    results = search_items(filters, strict=True)
+    
+    if not results:
+        await interaction.response.send_message("該当なし", ephemeral=True)
+        return
+    
+    embeds = []
+    
     for shop, name, eff in results:
-        text += f"◆【{shop}】{name}\n"
-        text += (
-            f"体力:{eff.get('体力',0)} / "
-            f"アーマー:{eff.get('アーマー',0)} / "
-            f"満腹:{eff.get('満腹',0)} / "
-            f"水分:{eff.get('水分',0)} / "
-            f"ストレス:{eff.get('ストレス',0)}\n"
-            f"使用速度:{eff.get('使用速度','-')} / "
-            f"移動上昇:{'有' if eff.get('移動上昇') else '無'}\n\n"
+        embed = discord.Embed(
+            title=f"◆【{shop}】{name}",
+            color=0x2b2d31
         )
-
-    await interaction.response.send_message(text, ephemeral=True)
+        
+        text = ""
+        
+        for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
+            val = eff.get(key, 0)
+            if val != 0:
+                text += f"{key}：{val}\n"
+                
+            if eff.get("使用速度"):
+                text += f"使用速度：{eff.get('使用速度')}\n"
+                
+            if eff.get("移動上昇") is not None:
+                text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
+                
+            embed.description = text if text else "効果なし"
+            embeds.append(embed)
+            
+        await interaction.response.send_message(embeds=embeds, ephemeral=True)
     
 # ------------------------
 # 起動
