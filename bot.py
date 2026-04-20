@@ -5217,7 +5217,7 @@ class SearchView(discord.ui.View):
             self.filters["使用速度"] = select.values[0]
             await interaction.response.edit_message(
                 content=self.build_status(),
-                content=self.build_status(),
+                view=SearchView(self.page, self.filters),
             )
 
         select.callback = callback
