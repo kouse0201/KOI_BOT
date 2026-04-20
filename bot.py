@@ -413,18 +413,23 @@ class AmountModal(discord.ui.Modal):
         super().__init__(title=f"{item} 数量")
         self.view_ref=view
         self.item=item
-        self.amount=discord.ui.TextInput(label="数量",default="1")
+
+        self.amount = discord.ui.TextInput(label="数量", default="1")
         self.add_item(self.amount)
 
-    async def on_submit(self,interaction):
+    async def on_submit(self, interaction):
         try:
-            qty=int(self.amount.value)
-            if qty<=0: raise
+            qty = int(self.amount.value)
+            if qty <= 0:
+                raise ValueError()
         except:
-            await interaction.response.send_message("数字入れて",ephemeral=True)
+            await interaction.response.send_message("数字入れて", ephemeral=True)
             return
 
-        self.view_ref.cart[self.item]=qty
+        self.view_ref.cart[self.item] = qty
+        await interaction.response.defer()
+        await self.view_ref.update(interaction)
+        
         
 
 class CategorySelect(discord.ui.Select):
