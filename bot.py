@@ -888,13 +888,27 @@ class SearchView(discord.ui.View):
         ]
 
         text = "【現在の条件】\n"
+        shown = False
+        
         for k in order:
-            if k in self.filters:
-                text += f"{k}: {self.filters[k]}\n"
-            else:
-                text += f"{k}: なし\n"
+            if k not in self.filters:
+                continue
 
-        return text
+            val = self.filters[k]
+            if val is True:
+                val = "条件指定"
+
+            if val is None or val is False:
+                continue
+            
+            text += f"{k}: {val}\n"
+            shown = True
+        
+        if not shown:
+            text += "なし\n"
+            return text
+
+
 
     def make_select(self, key, row):
         select = discord.ui.Select(
