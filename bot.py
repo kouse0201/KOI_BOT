@@ -5279,20 +5279,23 @@ class SearchView(discord.ui.View):
                 embed = discord.Embed(title=f"◆【{shop}】{name}")
                 
                 text = ""
-                
+
+                # 数値系（ループ）
                 for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
                     val = eff.get(key, 0)
                     if val != 0:
                         text += f"{key}：{val}\n"
 
-                    if eff.get("使用速度"):
-                        text += f"使用速度：{eff.get('使用速度')}\n"
-                        
-                    if eff.get("移動上昇") is not None:
-                        text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
+                # 使用速度（外）
+                if eff.get("使用速度"):
+                    text += f"使用速度：{eff.get('使用速度')}\n"
 
-                    embed.description = text or "効果なし"
-                    embeds.append(embed)
+                # 移動上昇（外）
+                if eff.get("移動上昇") is not None:
+                    text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
+                    
+                embed.description = text if text else "効果なし"
+                embeds.append(embed)
 
             for i in range(0, len(embeds), 10):
                 await interaction.followup.send(
