@@ -886,15 +886,13 @@ class SearchView(discord.ui.View):
             "体力","アーマー","満腹","水分","ストレス",
             "使用速度","移動上昇"
         ]
-        
+
         text = "【現在の条件】\n"
         for k in order:
             if k in self.filters:
                 text += f"{k}: {self.filters[k]}\n"
-            
             else:
                 text += f"{k}: なし\n"
-
 
         return text
 
@@ -909,11 +907,7 @@ class SearchView(discord.ui.View):
         )
 
         async def callback(interaction):
-            if select.values[0] == "あり":
-                self.filters[key] = True
-            else:
-                self.filters[key] = False
-
+            self.filters[key] = (select.values[0] == "あり")
             await interaction.response.edit_message(
                 content=self.build_status(),
                 view=SearchView(self.page, self.filters)
@@ -952,18 +946,17 @@ class SearchView(discord.ui.View):
             ],
             row=row
         )
-        
+
         async def callback(interaction):
             self.filters["移動上昇"] = (select.values[0] == "有")
-            
             await interaction.response.edit_message(
                 content=self.build_status(),
                 view=SearchView(self.page, self.filters)
-                )
-                
+            )
+
         select.callback = callback
         return select
-    
+
     async def interaction_check(self, interaction):
         cid = interaction.data.get("custom_id")
 
@@ -983,11 +976,10 @@ class SearchView(discord.ui.View):
             await interaction.response.defer(ephemeral=True)
 
             filters = dict(self.filters)
-            
-            if "移動上昇" in filters:
-                if eff.get("移動上昇") != filters["移動上昇"]:
-                    continue
-            
+
+            # 🔥 修正ポイント：ここで eff を使うのは完全にミスなので削除
+            # 🔥 continue も削除（ループ外だから死んでた）
+
             results = search_items(filters)
 
             new_view = SearchView(page=0, filters={})
@@ -996,7 +988,7 @@ class SearchView(discord.ui.View):
                 content=new_view.build_status(),
                 view=new_view
             )
-            
+
             self.filters.clear()
 
             if not results:
