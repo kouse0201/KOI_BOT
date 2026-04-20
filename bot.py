@@ -5415,7 +5415,43 @@ async def searchmenu2(
         embed.description = text if text else "効果なし"
         embeds.append(embed)
 
-    await interaction.response.send_message(embeds=embeds, ephemeral=True)
+    # embeds が空なら終了
+    if not embeds:
+        if not interaction.response.is_done():
+            await interaction.response.send_message("結果が見つかりませんでした", ephemeral=True)
+        else:
+            await interaction.followup.send("結果が見つかりませんでした", ephemeral=True)
+        return
+
+    total = len(embeds)
+    max_page = (total - 1) // 10 + 1
+
+    # --- 最初の1回だけ response ---
+    first_chunk = embeds[:10]
+    
+    if not interaction.response.is_done():
+        await interaction.response.send_message(
+            content=f"検索結果 1/{max_page}",
+            embeds=first_chunk,
+            ephemeral=True
+        )
+    else:
+        await interaction.followup.send(
+            content=f"検索結果 1/{max_page}",
+            embeds=first_chunk,
+            ephemeral=True
+        )
+
+    # --- 残りは followup ---
+    for i in range(10, total, 10):
+        chunk = embeds[i:i+10]
+        page = i // 10 + 1
+        
+        await interaction.followup.send(
+            content=f"検索結果 {page}/{max_page}",
+            embeds=chunk,
+            ephemeral=True
+        )
 # ------------------------
 # 起動
 # ------------------------
