@@ -5132,60 +5132,16 @@ class SearchView(discord.ui.View):
             self.add_item(self.make_select("満腹", row=2))
             self.add_item(self.make_select("水分", row=3))
 
-            self.add_item(discord.ui.Button(
-                label="次へ→",
-                style=discord.ButtonStyle.secondary,
-                custom_id="next"
-            ))
+            self.add_item(discord.ui.Button(label="次へ→", style=discord.ButtonStyle.secondary, custom_id="next"))
 
         else:
             self.add_item(self.make_select("ストレス", row=0))
             self.add_item(self.make_speed(row=1))
             self.add_item(self.make_move(row=2))
 
-            self.add_item(discord.ui.Button(
-                label="←戻る",
-                style=discord.ButtonStyle.secondary,
-                custom_id="prev"
-            ))
+            self.add_item(discord.ui.Button(label="←戻る", style=discord.ButtonStyle.secondary, custom_id="prev"))
 
-        self.add_item(discord.ui.Button(
-            label="検索",
-            style=discord.ButtonStyle.success,
-            custom_id="search_btn"
-        ))
-
-    def build_status(self):
-        order = [
-            "体力","アーマー","満腹","水分","ストレス",
-            "使用速度","移動上昇"
-        ]
-        
-        
-        text = "【現在の条件】\n"
-        shown = False
-
-        for k in order:
-            if k not in self.filters:
-                continue
-
-            val = self.filters[k]
-
-            if val is None:
-                continue
-                
-            if val is True:
-                val = "条件指定"
-                
-            text += f"{k}: {val}\n"
-            shown = True
-            
-        if not shown:
-            text += "なし\n"
-            
-        return text
-
-
+        self.add_item(discord.ui.Button(label="検索", style=discord.ButtonStyle.success, custom_id="search_btn"))
 
     def make_select(self, key, row):
         select = discord.ui.Select(
@@ -5199,10 +5155,7 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters[key] = (select.values[0] == "あり")
-            await interaction.response.edit_message(
-                content=self.build_status(),
-                view=SearchView(self.page, self.filters)
-            )
+            await interaction.response.edit_message(view=SearchView(self.page, self.filters))
 
         select.callback = callback
         return select
@@ -5220,10 +5173,7 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters["使用速度"] = select.values[0]
-            await interaction.response.edit_message(
-                content=self.build_status(),
-                view=SearchView(self.page, self.filters)
-            )
+            await interaction.response.edit_message(view=SearchView(self.page, self.filters))
 
         select.callback = callback
         return select
@@ -5240,10 +5190,7 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters["移動上昇"] = (select.values[0] == "有")
-            await interaction.response.edit_message(
-                content=self.build_status(),
-                view=SearchView(self.page, self.filters)
-            )
+            await interaction.response.edit_message(view=SearchView(self.page, self.filters))
 
         select.callback = callback
         return select
@@ -5252,35 +5199,17 @@ class SearchView(discord.ui.View):
         cid = interaction.data.get("custom_id")
 
         if cid == "next":
-            await interaction.response.edit_message(
-                view=SearchView(1, self.filters)
-            )
+            await interaction.response.edit_message(view=SearchView(1, self.filters))
             return False
 
         if cid == "prev":
-            await interaction.response.edit_message(
-                view=SearchView(0, self.filters)
-            )
+            await interaction.response.edit_message(view=SearchView(0, self.filters))
             return False
 
         if cid == "search_btn":
             await interaction.response.defer(ephemeral=True)
 
-            filters = dict(self.filters)
-
-            # 🔥 修正ポイント：ここで eff を使うのは完全にミスなので削除
-            # 🔥 continue も削除（ループ外だから死んでた）
-
-            results = search_items(filters)
-
-            new_view = SearchView(page=0, filters={})
-
-            await interaction.edit_original_response(
-                content=new_view.build_status(),
-                view=new_view
-            )
-
-            self.filters.clear()
+            results = search_items(self.filters)
 
             if not results:
                 await interaction.followup.send("該当なし", ephemeral=True)
@@ -5289,10 +5218,7 @@ class SearchView(discord.ui.View):
             embeds = []
 
             for shop, name, eff in results:
-                embed = discord.Embed(
-                    title=f"◆【{shop}】{name}",
-                    color=0x2b2d31
-                )
+                embed = discord.Embed(title=f"◆【{shop}】{name}")
 
                 text = ""
 
@@ -5307,29 +5233,47 @@ class SearchView(discord.ui.View):
                 if eff.get("移動上昇") is not None:
                     text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
 
-                embed.description = text if text else "効果なし"
+                embed.description = text or "効果なし"
                 embeds.append(embed)
 
-            if not embeds:
-                await interaction.followup.send("結果が見つかりませんでした", ephemeral=True)
-                return
-
-            # 10個ずつ送信
-            total = len(embeds)
-            
-            for i in range(0, total, 10):
-                chunk = embeds[i:i+10]
-                page = i // 10 + 1
-                max_page = (total - 1) // 10 + 1
-                
+            # 🔥10個制限対応
+            for i in range(0, len(embeds), 10):
                 await interaction.followup.send(
-                    content=f"検索結果 {page}/{max_page}",
-                    embeds=chunk,
+                    content=f"{i//10+1}ページ目",
+                    embeds=embeds[i:i+10],
                     ephemeral=True
                 )
+
             return False
 
         return True
+
+def search_items(filters, strict=False):
+    results = []
+
+    for shop, items in DATA.items():
+        for name, eff in items.items():
+
+            match = True
+
+            # ▼移動上昇
+            if "移動上昇" in filters:
+                val = eff.get("移動上昇", False)
+
+                if val in ["True", "true", 1]:
+                    val = True
+                elif val in ["False", "false", 0]:
+                    val = False
+
+                if val != filters["移動上昇"]:
+                    match = False
+
+            if match:
+                results.append((shop, name, eff))
+
+    return results
+
+
 @tree.command(name="searchmenu1") 
 async def searchmenu1(interaction):
     await interaction.response.send_message( 
