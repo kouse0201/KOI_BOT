@@ -862,11 +862,6 @@ class SearchView(discord.ui.View):
                 style=discord.ButtonStyle.secondary,
                 custom_id="next"
             ))
-            self.add_item(discord.ui.Button(
-                label="検索",
-                style=discord.ButtonStyle.success,
-                custom_id="search_btn"
-            ))
 
         else:
             self.add_item(self.make_select("ストレス", row=0))
