@@ -884,15 +884,17 @@ class SearchView(discord.ui.View):
     def build_status(self):
         if not self.filters:
             return "【現在の条件】なし"
-        
-        text = "【現在の条件】\n"
 
-        for k, v in self.filters.items():
-            
-            if k == "移動上昇":
-                v = "有" if v else "無"
-            
-            text += f"{k}: {v}\n"
+        order = [
+            "体力","アーマー","満腹","水分","ストレス",
+            "使用速度","移動上昇"
+        ]
+        
+        text = "【現在の条件】\n
+        for k in order:
+            if k in self.filters:
+                text += f"{k}: {self.filters[k]}\n"
+
 
         return text
 
@@ -952,13 +954,15 @@ class SearchView(discord.ui.View):
         )
 
         async def callback(interaction):
-            self.filters["移動上昇"] = True if select.values[0] == "有" else False
+            self.filters["移動上昇"] = select.values[0]
+
             await interaction.response.edit_message(
                 view=SearchView(self.page, self.filters)
             )
 
         select.callback = callback
         return select
+重要
 
     async def interaction_check(self, interaction):
         cid = interaction.data.get("custom_id")
@@ -979,6 +983,10 @@ class SearchView(discord.ui.View):
             await interaction.response.defer(ephemeral=True)
 
             filters = dict(self.filters)
+            
+            if "移動上昇" in filters:
+                filters["移動上昇"] = True if filters["移動上昇"] == "有" else False
+            
             results = search_items(filters)
 
             self.filters.clear()
