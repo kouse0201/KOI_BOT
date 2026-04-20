@@ -425,7 +425,7 @@ class AmountModal(discord.ui.Modal):
             return
 
         self.view_ref.cart[self.item]=qty
-        await self.view_ref.update(interaction)
+        
 
 class CategorySelect(discord.ui.Select):
     def __init__(self, view, cat, items):
@@ -847,7 +847,7 @@ async def buy(interaction):
 
 class SearchView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=180)
+        super().__init__(timeout=None)  # ← 無限にする
         self.filters = {}
 
     # ------------------------
@@ -962,8 +962,9 @@ class SearchView(discord.ui.View):
 
 @tree.command(name="searchmenu1")
 async def searchmenu1(interaction):
+    await interaction.response.defer(ephemeral=True)
 
-    await interaction.response.send_message(
+    await interaction.followup.send(
         "条件を選択して確定",
         view=SearchView(),
         ephemeral=True
@@ -1007,33 +1008,25 @@ async def searchmenu2(
 
     results = search_items(filters, strict=True)
 
-    embeds = []
-    
-    for shop, name, eff in results:
-        
-        embed = discord.Embed(
-            title=f"◆【{shop}】{name}",
-            color=0x2b2d31
-        )
-        
-        for k in ["体力","アーマー","満腹","水分","ストレス"]:
-            v = eff.get(k, 0)
-            if v != 0:
-                embed.add_field(name=k, value=str(v), inline=True)
-        
-        if eff.get("使用速度"):
-            embed.add_field(name="使用速度", value=eff["使用速度"], inline=True)
-               
-        if eff.get("移動上昇") is not None:
-            embed.add_field(
-                name="移動上昇",
-                value="有" if eff["移動上昇"] else "無",
-                inline=True
-            )
-        
-        embeds.append(embed)
+    if not results:
+        await interaction.response.send_message("該当なし", ephemeral=True)
+        return
 
-    await interaction.response.send_message(embeds=embeds, ephemeral=True)
+    text = "🔍【検索結果】\n\n"
+
+    for shop, name, eff in results:
+        text += f"◆【{shop}】{name}\n"
+        text += (
+            f"体力:{eff.get('体力',0)} / "
+            f"アーマー:{eff.get('アーマー',0)} / "
+            f"満腹:{eff.get('満腹',0)} / "
+            f"水分:{eff.get('水分',0)} / "
+            f"ストレス:{eff.get('ストレス',0)}\n"
+            f"使用速度:{eff.get('使用速度','-')} / "
+            f"移動上昇:{'有' if eff.get('移動上昇') else '無'}\n\n"
+        )
+
+    await interaction.response.send_message(text, ephemeral=True)
     
 # ------------------------
 # 起動
