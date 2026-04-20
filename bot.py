@@ -361,22 +361,27 @@ def search_items(filters, strict=False):
                 if filters["name"] not in name:
                     continue
 
-            # 数値系
+            # 数値系チェック
             for key in ["体力","アーマー","満腹","水分","ストレス"]:
-                val = eff.get(key)
+                val = eff.get(key, 0)
 
-                # ★0は存在しない扱い
-                if val == 0:
-                    if key in filters:
+                # UI検索（「あり」）
+                if filters.get(key) is True:
+                    if val == 0:
                         ok = False
                         break
-                    continue
 
-                if key in filters:
-                    if strict:
-                        if val != filters[key]:
-                            ok = False
-                            break
+                # strict検索（完全一致）
+                if strict and key in filters:
+                    if val != filters[key]:
+                        ok = False
+                        break
+
+                # 通常検索（0は除外）
+                if not strict and key in filters:
+                    if val == 0:
+                        ok = False
+                        break
 
             if not ok:
                 continue
@@ -845,6 +850,54 @@ class SearchView(discord.ui.View):
         super().__init__(timeout=180)
         self.filters = {}
 
+    # ------------------------
+    # 各フィルタ
+    # ------------------------
+    @discord.ui.select(
+        placeholder="体力",
+        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+    )
+    async def hp(self, interaction, select):
+        if select.values[0] == "あり":
+            self.filters["体力"] = True
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="アーマー",
+        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+    )
+    async def armor(self, interaction, select):
+        if select.values[0] == "あり":
+            self.filters["アーマー"] = True
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="満腹",
+        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+    )
+    async def food(self, interaction, select):
+        if select.values[0] == "あり":
+            self.filters["満腹"] = True
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="水分",
+        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+    )
+    async def water(self, interaction, select):
+        if select.values[0] == "あり":
+            self.filters["水分"] = True
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="ストレス",
+        options=[discord.SelectOption(label="指定なし"), discord.SelectOption(label="あり")]
+    )
+    async def stress(self, interaction, select):
+        if select.values[0] == "あり":
+            self.filters["ストレス"] = True
+        await interaction.response.defer()
+
     @discord.ui.select(
         placeholder="使用速度",
         options=[
@@ -868,20 +921,44 @@ class SearchView(discord.ui.View):
         self.filters["移動上昇"] = True if select.values[0] == "有" else False
         await interaction.response.defer()
 
-    @discord.ui.button(label="確定", style=discord.ButtonStyle.success)
-    async def confirm(self, interaction, button):
+    # ------------------------
+    # ★確定ボタン
+    # ------------------------
+    @discord.ui.button(label="検索", style=discord.ButtonStyle.success)
+    async def search(self, interaction, button):
 
         results = search_items(self.filters)
 
         if not results:
-            await interaction.response.send_message("見つからない", ephemeral=True)
+            await interaction.response.send_message("該当なし", ephemeral=True)
             return
 
-        text = ""
-        for shop, name, eff in results:
-            text += f"【{shop}】{name}\n{format_effects(eff)}\n\n"
+        embeds = []
 
-        await interaction.response.send_message(text, ephemeral=True)
+        for shop, name, eff in results:
+            embed = discord.Embed(
+                title=f"◆【{shop}】{name}",
+                color=0x2b2d31
+            )
+
+            # ★縦表示（見やすいやつ）
+            text = ""
+            for k in ["体力","アーマー","満腹","水分","ストレス"]:
+                v = eff.get(k, 0)
+                if v != 0:
+                    text += f"{k}：{v}\n"
+
+            if eff.get("使用速度"):
+                text += f"使用速度：{eff['使用速度']}\n"
+
+            if eff.get("移動上昇") is not None:
+                text += f"移動上昇：{'有' if eff['移動上昇'] else '無'}\n"
+
+            embed.description = text
+
+            embeds.append(embed)
+
+        await interaction.response.send_message(embeds=embeds, ephemeral=True)
 
 
 @tree.command(name="searchmenu1")
@@ -930,16 +1007,34 @@ async def searchmenu2(
 
     results = search_items(filters, strict=True)
 
-    if not results:
-        await interaction.response.send_message("見つからない", ephemeral=True)
-        return
-
-    text = ""
+    embeds = []
+    
     for shop, name, eff in results:
-        text += f"【{shop}】{name}\n{format_effects(eff)}\n\n"
+        
+        embed = discord.Embed(
+            title=f"◆【{shop}】{name}",
+            color=0x2b2d31
+        )
+        
+        for k in ["体力","アーマー","満腹","水分","ストレス"]:
+            v = eff.get(k, 0)
+            if v != 0:
+                embed.add_field(name=k, value=str(v), inline=True)
+        
+        if eff.get("使用速度"):
+            embed.add_field(name="使用速度", value=eff["使用速度"], inline=True)
+               
+        if eff.get("移動上昇") is not None:
+            embed.add_field(
+                name="移動上昇",
+                value="有" if eff["移動上昇"] else "無",
+                inline=True
+            )
+        
+        embeds.append(embed)
 
-    await interaction.response.send_message(text, ephemeral=True)
-
+    await interaction.response.send_message(embeds=embeds, ephemeral=True)
+    
 # ------------------------
 # 起動
 # ------------------------
