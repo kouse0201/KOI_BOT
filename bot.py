@@ -851,50 +851,41 @@ class SearchView(discord.ui.View):
         self.page = page
         self.filters = filters or {}
 
-        # ------------------------
-        # ページ1
-        # ------------------------
-        if self.page == 0:
-            self.add_item(self.make_select("体力", "体力", row=0))
-            self.add_item(self.make_select("アーマー", "アーマー", row=1))
-            self.add_item(self.make_select("満腹", "満腹", row=2))
-            self.add_item(self.make_select("水分", "水分", row=3))
+        if page == 0:
+            self.add_item(self.make_select("体力", row=0))
+            self.add_item(self.make_select("アーマー", row=1))
+            self.add_item(self.make_select("満腹", row=2))
+            self.add_item(self.make_select("水分", row=3))
+            self.add_item(self.make_select("ストレス", row=4))
 
             self.add_item(discord.ui.Button(
                 label="次へ→",
                 style=discord.ButtonStyle.secondary,
-                custom_id="next",
-                row=4
+                custom_id="next"
             ))
 
-        # ------------------------
-        # ページ2
-        # ------------------------
         else:
-            self.add_item(self.make_select("ストレス", "ストレス", row=0))
-            self.add_item(self.make_speed_select(row=1))
-            self.add_item(self.make_move_select(row=2))
+            self.add_item(self.make_speed(row=0))
+            self.add_item(self.make_move(row=1))
 
             self.add_item(discord.ui.Button(
                 label="←戻る",
                 style=discord.ButtonStyle.secondary,
-                custom_id="prev",
-                row=3
+                custom_id="prev"
             ))
 
-            self.add_item(discord.ui.Button(
-                label="検索",
-                style=discord.ButtonStyle.success,
-                custom_id="search",
-                row=4
-            ))
+        self.add_item(discord.ui.Button(
+            label="検索",
+            style=discord.ButtonStyle.success,
+            custom_id="search_btn"
+        ))
 
     # ------------------------
-    # 共通Select（あり/なし）
+    # 汎用select（あり/なし）
     # ------------------------
-    def make_select(self, label, key, row):
+    def make_select(self, key, row):
         select = discord.ui.Select(
-            placeholder=label,
+            placeholder=key,
             options=[
                 discord.SelectOption(label="指定なし"),
                 discord.SelectOption(label="あり")
@@ -908,8 +899,9 @@ class SearchView(discord.ui.View):
             else:
                 self.filters.pop(key, None)
 
-            await interaction.response.defer()
-            await interaction.message.edit(view=SearchView(self.page, self.filters))
+            await interaction.response.edit_message(
+                view=SearchView(self.page, self.filters)
+            )
 
         select.callback = callback
         return select
@@ -917,7 +909,7 @@ class SearchView(discord.ui.View):
     # ------------------------
     # 使用速度
     # ------------------------
-    def make_speed_select(self, row):
+    def make_speed(self, row):
         select = discord.ui.Select(
             placeholder="使用速度",
             options=[
@@ -930,8 +922,9 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters["使用速度"] = select.values[0]
-            await interaction.response.defer()
-            await interaction.message.edit(view=SearchView(self.page, self.filters))
+            await interaction.response.edit_message(
+                view=SearchView(self.page, self.filters)
+            )
 
         select.callback = callback
         return select
@@ -939,7 +932,7 @@ class SearchView(discord.ui.View):
     # ------------------------
     # 移動上昇
     # ------------------------
-    def make_move_select(self, row):
+    def make_move(self, row):
         select = discord.ui.Select(
             placeholder="移動上昇",
             options=[
@@ -951,8 +944,9 @@ class SearchView(discord.ui.View):
 
         async def callback(interaction):
             self.filters["移動上昇"] = True if select.values[0] == "有" else False
-            await interaction.response.defer()
-            await interaction.message.edit(view=SearchView(self.page, self.filters))
+            await interaction.response.edit_message(
+                view=SearchView(self.page, self.filters)
+            )
 
         select.callback = callback
         return select
@@ -964,14 +958,18 @@ class SearchView(discord.ui.View):
         cid = interaction.data.get("custom_id")
 
         if cid == "next":
-            await interaction.response.edit_message(view=SearchView(1, self.filters))
+            await interaction.response.edit_message(
+                view=SearchView(1, self.filters)
+            )
             return False
 
         if cid == "prev":
-            await interaction.response.edit_message(view=SearchView(0, self.filters))
+            await interaction.response.edit_message(
+                view=SearchView(0, self.filters)
+            )
             return False
 
-        if cid == "search":
+        if cid == "search_btn":
             await interaction.response.defer(ephemeral=True)
 
             results = search_items(self.filters)
@@ -980,10 +978,15 @@ class SearchView(discord.ui.View):
                 await interaction.followup.send("該当なし", ephemeral=True)
                 return False
 
-            text = "🔍【検索結果】\n\n"
+            embeds = []
 
             for shop, name, eff in results:
-                text += f"◆【{shop}】{name}\n"
+                embed = discord.Embed(
+                    title=f"◆【{shop}】{name}",
+                    color=0x2b2d31
+                )
+
+                text = ""
 
                 for key in ["体力","アーマー","満腹","水分","ストレス"]:
                     val = eff.get(key, 0)
@@ -996,9 +999,10 @@ class SearchView(discord.ui.View):
                 if eff.get("移動上昇") is not None:
                     text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
 
-                text += "\n"
+                embed.description = text if text else "効果なし"
+                embeds.append(embed)
 
-            await interaction.followup.send(text, ephemeral=True)
+            await interaction.followup.send(embeds=embeds, ephemeral=True)
             return False
 
         return True
