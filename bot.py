@@ -952,16 +952,18 @@ class SearchView(discord.ui.View):
             ],
             row=row
         )
-
+        
         async def callback(interaction):
-            self.filters["移動上昇"] = select.values[0]
-
+            self.filters["移動上昇"] = (select.values[0] == "有")
+            
             await interaction.response.edit_message(
+                content=self.build_status(),
                 view=SearchView(self.page, self.filters)
-            )
-
+                )
+                
         select.callback = callback
         return select
+    
     async def interaction_check(self, interaction):
         cid = interaction.data.get("custom_id")
 
