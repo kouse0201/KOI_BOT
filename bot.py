@@ -5310,7 +5310,23 @@ class SearchView(discord.ui.View):
                 embed.description = text if text else "効果なし"
                 embeds.append(embed)
 
-            await interaction.followup.send(embeds=embeds, ephemeral=True)
+            if not embeds:
+                await interaction.followup.send("結果が見つかりませんでした", ephemeral=True)
+                return
+
+            # 10個ずつ送信
+            total = len(embeds)
+            
+            for i in range(0, total, 10):
+                chunk = embeds[i:i+10]
+                page = i // 10 + 1
+                max_page = (total - 1) // 10 + 1
+                
+                await interaction.followup.send(
+                    content=f"検索結果 {page}/{max_page}",
+                    embeds=chunk,
+                    ephemeral=True
+                )
             return False
 
         return True
@@ -5390,7 +5406,11 @@ async def searchmenu2(
         # 移動上昇（1回だけ）
         move = eff.get("移動上昇")
         if move is not None:
-            text += f"移動上昇：{'有' if move else '無'}\n"
+            if move in [True, "True", "true", 1]:
+                text += "移動上昇：有\n"
+            else:
+                text += "移動上昇：無\n"
+
 
         embed.description = text if text else "効果なし"
         embeds.append(embed)
