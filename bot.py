@@ -890,7 +890,7 @@ class SearchView(discord.ui.View):
             "使用速度","移動上昇"
         ]
         
-        text = "【現在の条件】\n
+        text = "【現在の条件】\n"
         for k in order:
             if k in self.filters:
                 text += f"{k}: {self.filters[k]}\n"
