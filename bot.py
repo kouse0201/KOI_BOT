@@ -846,170 +846,137 @@ async def buy(interaction):
 
 
 class SearchView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, page=0, filters=None):
         super().__init__(timeout=None)
-        self.filters = {}
+        self.page = page
+        self.filters = filters or {}
 
-    @discord.ui.select(
-        placeholder="体力",
-        options=[
-            discord.SelectOption(label="指定なし"),
-            discord.SelectOption(label="あり")
-        ],
-        row=0
-    )
-    async def hp(self, interaction, select):
-        if select.values[0] == "あり":
-            self.filters["体力"] = True
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
+        # ------------------------
+        # ページ1（ステータス）
+        # ------------------------
+        if self.page == 0:
+            self.add_item(self.make_select("体力", "体力", row=0))
+            self.add_item(self.make_select("アーマー", "アーマー", row=1))
+            self.add_item(self.make_select("満腹", "満腹", row=2))
+            self.add_item(self.make_select("水分", "水分", row=3))
+            self.add_item(self.make_select("ストレス", "ストレス", row=4))
 
-    @discord.ui.select(
-        placeholder="アーマー",
-        options=[
-            discord.SelectOption(label="指定なし"),
-            discord.SelectOption(label="あり")
-        ],
-        row=1
-    )
-    async def armor(self, interaction, select):
-        if select.values[0] == "あり":
-            self.filters["アーマー"] = True
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
+            self.add_item(discord.ui.Button(label="次へ→", style=discord.ButtonStyle.secondary, custom_id="next", row=4))
 
-    @discord.ui.select(
-        placeholder="満腹",
-        options=[
-            discord.SelectOption(label="指定なし"),
-            discord.SelectOption(label="あり")
-        ],
-        row=2
-    )
-    async def food(self, interaction, select):
-        if select.values[0] == "あり":
-            self.filters["満腹"] = True
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
+        # ------------------------
+        # ページ2（追加条件）
+        # ------------------------
+        else:
+            self.add_item(self.make_speed_select(row=0))
+            self.add_item(self.make_move_select(row=1))
 
-    @discord.ui.select(
-        placeholder="水分",
-        options=[
-            discord.SelectOption(label="指定なし"),
-            discord.SelectOption(label="あり")
-        ],
-        row=3
-    )
-    async def water(self, interaction, select):
-        if select.values[0] == "あり":
-            self.filters["水分"] = True
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
-
-    @discord.ui.select(
-        placeholder="ストレス",
-        options=[
-            discord.SelectOption(label="指定なし"),
-            discord.SelectOption(label="あり")
-        ],
-        row=4
-    )
-    async def stress(self, interaction, select):
-        if select.values[0] == "あり":
-            self.filters["ストレス"] = True
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
-
-    @discord.ui.select(
-        placeholder="使用速度",
-        options=[
-            discord.SelectOption(label="普"),
-            discord.SelectOption(label="早"),
-            discord.SelectOption(label="遅")
-        ],
-        row=5
-    )
-    async def speed(self, interaction, select):
-        self.filters["使用速度"] = select.values[0]
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
-
-    @discord.ui.select(
-        placeholder="移動上昇",
-        options=[
-            discord.SelectOption(label="有"),
-            discord.SelectOption(label="無")
-        ],
-        row=6
-    )
-    async def move(self, interaction, select):
-        self.filters["移動上昇"] = True if select.values[0] == "有" else False
-        await interaction.response.defer()
-        await interaction.message.edit(view=self)
-
-    @discord.ui.button(label="検索", style=discord.ButtonStyle.success, row=7)
-    async def search(self, interaction, button):
-        await interaction.response.defer(ephemeral=True)
-
-        results = search_items(self.filters)
-
-        if not results:
-            await interaction.followup.send("該当なし", ephemeral=True)
-            return
-
-        text = "🔍【検索結果】\n\n"
-
-        for shop, name, eff in results:
-            text += f"◆【{shop}】{name}\n"
-
-            for key in ["体力","アーマー","満腹","水分","ストレス"]:
-                val = eff.get(key, 0)
-                if val != 0:
-                    text += f"{key}：{val}\n"
-
-            if eff.get("使用速度"):
-                text += f"使用速度：{eff.get('使用速度')}\n"
-
-            if eff.get("移動上昇") is not None:
-                text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
-
-            text += "\n"
-
-        await interaction.followup.send(text, ephemeral=True)
+            self.add_item(discord.ui.Button(label="←戻る", style=discord.ButtonStyle.secondary, custom_id="prev", row=4))
+            self.add_item(discord.ui.Button(label="検索", style=discord.ButtonStyle.success, custom_id="search", row=4))
 
     # ------------------------
-    # ★確定ボタン
+    # Select生成（共通）
     # ------------------------
-    @discord.ui.button(label="検索", style=discord.ButtonStyle.success)
-    async def search(self, interaction, button):
-        
-        await interaction.response.defer(ephemeral=True)
-        
-        results = search_items(self.filters)
-        
-        if not results:
-            await interaction.followup.send("該当なし", ephemeral=True)
-            return
+    def make_select(self, label, key, row):
+        select = discord.ui.Select(
+            placeholder=label,
+            options=[
+                discord.SelectOption(label="指定なし"),
+                discord.SelectOption(label="あり")
+            ],
+            row=row
+        )
 
-        text = "🔍【検索結果】\n\n"
+        async def callback(interaction):
+            if select.values[0] == "あり":
+                self.filters[key] = True
+            await interaction.response.defer()
+            await interaction.message.edit(view=SearchView(self.page, self.filters))
 
-        for shop, name, eff in results:
-            text += f"◆【{shop}】{name}\n"
+        select.callback = callback
+        return select
 
-            for key in ["体力","アーマー","満腹","水分","ストレス"]:
-                val = eff.get(key, 0)
-                if val != 0:
-                    text += f"{key}：{val}\n"
+    def make_speed_select(self, row):
+        select = discord.ui.Select(
+            placeholder="使用速度",
+            options=[
+                discord.SelectOption(label="普"),
+                discord.SelectOption(label="早"),
+                discord.SelectOption(label="遅")
+            ],
+            row=row
+        )
 
-            if eff.get("使用速度"):
-                text += f"使用速度：{eff.get('使用速度')}\n"
+        async def callback(interaction):
+            self.filters["使用速度"] = select.values[0]
+            await interaction.response.defer()
+            await interaction.message.edit(view=SearchView(self.page, self.filters))
 
-            if eff.get("移動上昇") is not None:
-                text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
-            
-            text += "\n"
+        select.callback = callback
+        return select
 
+    def make_move_select(self, row):
+        select = discord.ui.Select(
+            placeholder="移動上昇",
+            options=[
+                discord.SelectOption(label="有"),
+                discord.SelectOption(label="無")
+            ],
+            row=row
+        )
 
+        async def callback(interaction):
+            self.filters["移動上昇"] = True if select.values[0] == "有" else False
+            await interaction.response.defer()
+            await interaction.message.edit(view=SearchView(self.page, self.filters))
+
+        select.callback = callback
+        return select
+
+    # ------------------------
+    # ボタン処理
+    # ------------------------
+    async def interaction_check(self, interaction):
+        cid = interaction.data.get("custom_id")
+
+        if cid == "next":
+            await interaction.response.edit_message(view=SearchView(1, self.filters))
+            return False
+
+        if cid == "prev":
+            await interaction.response.edit_message(view=SearchView(0, self.filters))
+            return False
+
+        if cid == "search":
+            await interaction.response.defer(ephemeral=True)
+
+            results = search_items(self.filters)
+
+            if not results:
+                await interaction.followup.send("該当なし", ephemeral=True)
+                return False
+
+            text = "🔍【検索結果】\n\n"
+
+            for shop, name, eff in results:
+                text += f"◆【{shop}】{name}\n"
+
+                for key in ["体力","アーマー","満腹","水分","ストレス"]:
+                    val = eff.get(key, 0)
+                    if val != 0:
+                        text += f"{key}：{val}\n"
+
+                if eff.get("使用速度"):
+                    text += f"使用速度：{eff.get('使用速度')}\n"
+
+                if eff.get("移動上昇") is not None:
+                    text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
+
+                text += "\n"
+
+            await interaction.followup.send(text, ephemeral=True)
+            return False
+
+        return True
 @tree.command(name="searchmenu1")
 async def searchmenu1(interaction):
     await interaction.response.send_message(
