@@ -860,7 +860,8 @@ class SearchView(discord.ui.View):
     async def hp(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["体力"] = True
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     @discord.ui.select(
         placeholder="アーマー",
@@ -869,7 +870,8 @@ class SearchView(discord.ui.View):
     async def armor(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["アーマー"] = True
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     @discord.ui.select(
         placeholder="満腹",
@@ -878,7 +880,8 @@ class SearchView(discord.ui.View):
     async def food(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["満腹"] = True
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     @discord.ui.select(
         placeholder="水分",
@@ -887,7 +890,8 @@ class SearchView(discord.ui.View):
     async def water(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["水分"] = True
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     @discord.ui.select(
         placeholder="ストレス",
@@ -896,7 +900,8 @@ class SearchView(discord.ui.View):
     async def stress(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["ストレス"] = True
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     @discord.ui.select(
         placeholder="使用速度",
@@ -908,7 +913,8 @@ class SearchView(discord.ui.View):
     )
     async def speed(self, interaction, select):
         self.filters["使用速度"] = select.values[0]
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     @discord.ui.select(
         placeholder="移動上昇",
@@ -919,7 +925,8 @@ class SearchView(discord.ui.View):
     )
     async def move(self, interaction, select):
         self.filters["移動上昇"] = True if select.values[0] == "有" else False
-        await interaction.response.edit_message(view=self)
+        await interaction.response.defer()
+        await interaction.message.edit(view=self)
 
     # ------------------------
     # ★確定ボタン
@@ -935,29 +942,23 @@ class SearchView(discord.ui.View):
             await interaction.followup.send("該当なし", ephemeral=True)
             return
 
-        embeds = []
-        
+        text = "🔍【検索結果】\n\n"
+
         for shop, name, eff in results:
-            embed = discord.Embed(
-                title=f"◆【{shop}】{name}",
-                color=0x2b2d31
-            )
+            text += f"◆【{shop}】{name}\n"
+
+            for key in ["体力","アーマー","満腹","水分","ストレス"]:
+                val = eff.get(key, 0)
+                if val != 0:
+                    text += f"{key}：{val}\n"
+
+            if eff.get("使用速度"):
+                text += f"使用速度：{eff.get('使用速度')}\n"
+
+            if eff.get("移動上昇") is not None:
+                text += f"移動上昇：{'有' if eff.get('移動上昇') else '無'}\n"
             
-            text = (
-                f"体力：{eff.get('体力',0)}\n"
-                f"アーマー：{eff.get('アーマー',0)}\n"
-                f"満腹：{eff.get('満腹',0)}\n"
-                f"水分：{eff.get('水分',0)}\n"
-                f"ストレス：{eff.get('ストレス',0)}\n"
-                f"使用速度：{eff.get('使用速度','-')}\n"
-                f"移動上昇：{'有' if eff.get('移動上昇') else '無'}"
-                
-            )
-
-            embed.description = text
-            embeds.append(embed)
-
-        await interaction.followup.send(embeds=embeds, ephemeral=True)
+            text += "\n"
 
 
 @tree.command(name="searchmenu1")
