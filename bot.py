@@ -1631,7 +1631,7 @@ SEARCH_MENU = {
             "移動上昇": "False"
         },
     },
-    Mystic "Spells": {
+    "Mystic Spells": {
         "ポーション": {
             "体力": 20,
             "アーマー": 0,
