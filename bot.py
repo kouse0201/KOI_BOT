@@ -197,6 +197,20 @@ def get_working_count():
     return sum(1 for u in data.values() if u.get("is_working"))
 
 @tasks.loop(seconds=10)
+async def update_status():
+    count = get_working_count()
+
+    if count > 0:
+        await bot.change_presence(
+            status=discord.Status.online,
+            activity=discord.Game(f"開店中({count}人)")
+        )
+    else:
+        await bot.change_presence(
+            status=discord.Status.idle,
+            activity=discord.Game("閉店中")
+        )
+
 async def update(self, interaction):
     text = "【注文中】\n"
 
