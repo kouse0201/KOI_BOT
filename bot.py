@@ -962,8 +962,6 @@ class SearchView(discord.ui.View):
 
         select.callback = callback
         return select
-重要
-
     async def interaction_check(self, interaction):
         cid = interaction.data.get("custom_id")
 
