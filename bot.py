@@ -846,6 +846,7 @@ async def buy(interaction):
 
 
 class SearchView(discord.ui.View):
+
     def __init__(self, page=0, filters=None):
         super().__init__(timeout=None)
         self.page = page
@@ -880,9 +881,15 @@ class SearchView(discord.ui.View):
             custom_id="search_btn"
         ))
 
-    # ------------------------
-    # 汎用select（あり/なし）
-    # ------------------------
+    def build_status(self):
+        if not self.filters:
+            return "【現在の条件】なし"
+
+        text = "【現在の条件】\n"
+        for k, v in self.filters.items():
+            text += f"{k}: {v}\n"
+        return text
+
     def make_select(self, key, row):
         select = discord.ui.Select(
             placeholder=key,
@@ -900,15 +907,13 @@ class SearchView(discord.ui.View):
                 self.filters.pop(key, None)
 
             await interaction.response.edit_message(
+                content=self.build_status(),
                 view=SearchView(self.page, self.filters)
             )
 
         select.callback = callback
         return select
 
-    # ------------------------
-    # 使用速度
-    # ------------------------
     def make_speed(self, row):
         select = discord.ui.Select(
             placeholder="使用速度",
@@ -929,9 +934,6 @@ class SearchView(discord.ui.View):
         select.callback = callback
         return select
 
-    # ------------------------
-    # 移動上昇
-    # ------------------------
     def make_move(self, row):
         select = discord.ui.Select(
             placeholder="移動上昇",
@@ -951,9 +953,6 @@ class SearchView(discord.ui.View):
         select.callback = callback
         return select
 
-    # ------------------------
-    # ボタン処理
-    # ------------------------
     async def interaction_check(self, interaction):
         cid = interaction.data.get("custom_id")
 
@@ -972,7 +971,14 @@ class SearchView(discord.ui.View):
         if cid == "search_btn":
             await interaction.response.defer(ephemeral=True)
 
-            results = search_items(self.filters)
+            filters = dict(self.filters)
+            results = search_items(filters)
+
+            self.filters = {}
+
+            await interaction.edit_original_response(
+                view=SearchView()
+            )
 
             if not results:
                 await interaction.followup.send("該当なし", ephemeral=True)
@@ -988,7 +994,7 @@ class SearchView(discord.ui.View):
 
                 text = ""
 
-                for key in ["体力","アーマー","満腹","水分","ストレス"]:
+                for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
                     val = eff.get(key, 0)
                     if val != 0:
                         text += f"{key}：{val}\n"
@@ -1006,6 +1012,7 @@ class SearchView(discord.ui.View):
             return False
 
         return True
+
         
 @tree.command(name="searchmenu1")
 async def searchmenu1(interaction):
