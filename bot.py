@@ -860,7 +860,7 @@ class SearchView(discord.ui.View):
     async def hp(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["体力"] = True
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(
         placeholder="アーマー",
@@ -869,7 +869,7 @@ class SearchView(discord.ui.View):
     async def armor(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["アーマー"] = True
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(
         placeholder="満腹",
@@ -878,7 +878,7 @@ class SearchView(discord.ui.View):
     async def food(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["満腹"] = True
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(
         placeholder="水分",
@@ -887,7 +887,7 @@ class SearchView(discord.ui.View):
     async def water(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["水分"] = True
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(
         placeholder="ストレス",
@@ -896,7 +896,7 @@ class SearchView(discord.ui.View):
     async def stress(self, interaction, select):
         if select.values[0] == "あり":
             self.filters["ストレス"] = True
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(
         placeholder="使用速度",
@@ -908,7 +908,7 @@ class SearchView(discord.ui.View):
     )
     async def speed(self, interaction, select):
         self.filters["使用速度"] = select.values[0]
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(
         placeholder="移動上昇",
@@ -919,7 +919,7 @@ class SearchView(discord.ui.View):
     )
     async def move(self, interaction, select):
         self.filters["移動上昇"] = True if select.values[0] == "有" else False
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.edit_message(view=self)
 
     # ------------------------
     # ★確定ボタン
@@ -934,26 +934,27 @@ class SearchView(discord.ui.View):
         if not results:
             await interaction.followup.send("該当なし", ephemeral=True)
             return
-            
-        embeds = []
 
+        embeds = []
+        
         for shop, name, eff in results:
             embed = discord.Embed(
                 title=f"◆【{shop}】{name}",
                 color=0x2b2d31
-            
             )
             
-            lines = []
-            for k in ["体力","アーマー","満腹","水分","ストレス"]:
-                v = eff.get(k, 0)
-                lines.append(f"{k}：{v}")
+            text = (
+                f"体力：{eff.get('体力',0)}\n"
+                f"アーマー：{eff.get('アーマー',0)}\n"
+                f"満腹：{eff.get('満腹',0)}\n"
+                f"水分：{eff.get('水分',0)}\n"
+                f"ストレス：{eff.get('ストレス',0)}\n"
+                f"使用速度：{eff.get('使用速度','-')}\n"
+                f"移動上昇：{'有' if eff.get('移動上昇') else '無'}"
                 
-            lines.append(f"使用速度：{eff.get('使用速度','-')}")
-            lines.append(f"移動上昇：{'有' if eff.get('移動上昇') else '無'}")
-            
-            embed.description = "\n".join(lines)
-            
+            )
+
+            embed.description = text
             embeds.append(embed)
 
         await interaction.followup.send(embeds=embeds, ephemeral=True)
@@ -961,9 +962,8 @@ class SearchView(discord.ui.View):
 
 @tree.command(name="searchmenu1")
 async def searchmenu1(interaction):
-    await interaction.response.defer(ephemeral=True)
-    
-    await interaction.followup.send(
+
+    await interaction.response.send_message(
         "条件を選択して確定",
         view=SearchView(),
         ephemeral=True
