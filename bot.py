@@ -198,24 +198,18 @@ def get_working_count():
 
 @tasks.loop(seconds=10)
 async def update(self, interaction):
-    text = "【注文中】\n"
+    text = "【注文中】\n\n"
 
     for k, v in self.cart.items():
         text += f"{k} ×{v}\n"
 
-    text += f"\n💰合計：{yen(self.calc_total())}"
+    text += f"\n💰合計：{self.calc_total():,}円"
 
     try:
-        if interaction.response.is_done():
-            await interaction.message.edit(
-                content=text,
-                view=OrderView(self.page, self.cart)
-            )
-        else:
-            await interaction.response.edit_message(
-                content=text,
-                view=OrderView(self.page, self.cart)
-            )
+        await interaction.response.edit_message(
+            content=text,
+            view=OrderView(self.page, self.cart)
+        )
     except:
         await interaction.message.edit(
             content=text,
