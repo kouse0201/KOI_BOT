@@ -198,22 +198,22 @@ def get_working_count():
 
 @tasks.loop(seconds=10)
 async def update(self, interaction):
-    text = "【注文中】\n\n"
+    text = "【注文中】\n"
 
     for k, v in self.cart.items():
         text += f"{k} ×{v}\n"
 
-    text += f"\n💰合計：{self.calc_total():,}円"
+    text += f"\n💰合計：{yen(self.calc_total())}"
 
     try:
-        await interaction.response.edit_message(
-            content=text,
-            view=OrderView(self.page, self.cart)
-        )
-    except:
         await interaction.message.edit(
             content=text,
-            view=OrderView(self.page, self.cart)
+            view=self   # ← ここ重要（再生成禁止）
+        )
+    except:
+        await interaction.response.edit_message(
+            content=text,
+            view=self
         )
 # ------------------------
 # メニュー（そのまま）
@@ -433,10 +433,16 @@ class AmountModal(discord.ui.Modal):
 
         self.view_ref.cart[self.item] = qty
 
-        # 応答だけ通す（重要）
-        await interaction.response.defer()
+        text = "【注文中】\n"
+        for k, v in self.view_ref.cart.items():
+            text += f"{k} ×{v}\n"
 
-        await self.view_ref.update(interaction)
+        text += f"\n💰合計：{yen(self.view_ref.calc_total())}"
+        
+        await interaction.response.edit_message(
+            content=text,
+            view=self.view_ref
+        )
         
 
 class CategorySelect(discord.ui.Select):
