@@ -31,6 +31,12 @@ def save_data(data):
 
 data = load_data()
 
+if "_global" not in data:
+    data["_global"] = {}
+
+if "shop_profit" not in data["_global"]:
+    data["_global"]["shop_profit"] = 0
+
 def init_user(user):
     uid=str(user.id)
     if uid not in data:
@@ -324,6 +330,7 @@ def build_status(self):
 SEARCH_MENU = {
     "温泉KOI": {
         "特製KOI定食": {
+            "金額": 5000,
             "体力": 0,
             "アーマー": 20,
             "満腹": 35,
@@ -1939,6 +1946,24 @@ SEARCH_MENU = {
             "使用速度": "普",
             "移動上昇": False
         },
+        "Pearl特製シーフードスキュワーズ ": {
+            "体力": 0,
+            "アーマー": 70,
+            "満腹": 30,
+            "水分": 0,
+            "ストレス": 10,
+            "使用速度": "普",
+            "移動上昇": False
+        },
+        "Pearlのシュールストレミング": {
+            "体力": -35,
+            "アーマー": -35,
+            "満腹": -35,
+            "水分": -35,
+            "ストレス": -35,
+            "使用速度": "普",
+            "移動上昇": False
+        },
         "サバのヴィネグレットマリネ": {
             "体力": 0,
             "アーマー": 10,
@@ -3364,6 +3389,24 @@ SEARCH_MENU = {
             "使用速度": "普",
             "移動上昇": False
         },
+        "信玄餅": {
+            "体力": 20,
+            "アーマー": 20,
+            "満腹": 15,
+            "水分": 0,
+            "ストレス": -35,
+            "使用速度": "早",
+            "移動上昇": True
+        },
+        "ストロベリーのわペチーノ": {
+            "体力": 0,
+            "アーマー": 0,
+            "満腹": 0,
+            "水分": 50,
+            "ストレス": 25,
+            "使用速度": "普",
+            "移動上昇": False
+        },
         "どら焼き": {
             "体力": 0,
             "アーマー": 0,
@@ -4652,6 +4695,10 @@ def search_items(filters, strict=False):
             if not ok:
                 continue
 
+            if "金額" in filters:
+                if eff.get("金額") != filters["金額"]:
+                    continue
+
             # 使用速度
             if filters.get("使用速度"):
                 if eff.get("使用速度") != filters["使用速度"]:
@@ -4838,6 +4885,8 @@ class OrderView(discord.ui.View):
 
             profit=total-cost-worker
 
+            data["_global"]["shop_profit"] += profit
+
             data[uid]["sales"] += (total-cost)        # 未受取
             data[uid]["total_sales"] += (total-cost)  # 総売上
             data[uid]["pay"] += worker
@@ -5017,6 +5066,15 @@ async def payall(interaction):
         ephemeral=True
     )
 
+@tree.command(name="profit")
+async def profit(interaction):
+    total = data.get("_global", {}).get("shop_profit", 0)
+
+    await interaction.response.send_message(
+        f"🏪店の利益：{yen(total)}",
+        ephemeral=True
+    )
+
 @tree.command(name="mobilesales")
 async def mobilesales(interaction):
     result = {}
@@ -5071,6 +5129,16 @@ async def editpaying(interaction,member:discord.Member,target:str,amount:int):
 
     save_data(data)
     await interaction.response.send_message("OK",ephemeral=True)
+
+@tree.command(name="editprofit")
+async def editprofit(interaction, amount: int):
+    data["_global"]["shop_profit"] += amount
+    save_data(data)
+
+    await interaction.response.send_message(
+        f"OK（現在：{yen(data['_global']['shop_profit'])}）",
+        ephemeral=True
+    )
 
 @tree.command(name="resettime")
 async def resettime(interaction,member:discord.Member):
@@ -5279,6 +5347,9 @@ class SearchView(discord.ui.View):
                 embed = discord.Embed(title=f"◆【{shop}】{name}")
                 
                 text = ""
+                # ★金額
+                if eff.get("金額") is not None:
+                    text += f"金額：{yen(eff.get('金額'))}\n"
 
                 # 数値系（ループ）
                 for key in ["体力", "アーマー", "満腹", "水分", "ストレス"]:
@@ -5324,6 +5395,7 @@ async def searchmenu2(
     interaction,
     店舗名: str = None,
     商品名: str = None,
+    金額: int = None,
     体力: int = None,
     アーマー: int = None,
     満腹: int = None,
@@ -5339,6 +5411,8 @@ async def searchmenu2(
         filters["shop"] = 店舗名
     if 商品名:
         filters["name"] = 商品名
+    if 金額 is not None:
+        filters["金額"] = 金額
 
     for key, val in {
         "体力": 体力,
@@ -5371,6 +5445,10 @@ async def searchmenu2(
         )
         
         text = ""
+
+        # ★金額
+        if eff.get("金額") is not None:
+            text += f"金額：{yen(eff.get('金額'))}\n"
 
         # ------------------------
         # 数値系（1回だけ）
