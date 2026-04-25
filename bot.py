@@ -299,8 +299,8 @@ MENU = {
         "ブレンド珈琲饅頭(PIPEDOWN-South-)":{"price":100000,"cost":27500,"mobile":True},
         },
     "イベントメニュー":{
-        "田中さんのりんご飴":{"price":7100,"cost":2375,"mobile":True},
-        "KOIいちごみるく":{"price":5900,"cost":2625,"mobile":True},
+        "田中さんのりんご飴":{"price":5500,"cost":2375,"mobile":True},
+        "KOIいちごみるく":{"price":5500,"cost":2625,"mobile":True},
         "温泉のお香":{"price":6300,"cost":2000,"mobile":True},
         "よくばりプリンパフェ":{"price":10000,"cost":2500,"mobile":True},
         },
