@@ -240,6 +240,9 @@ async def update(self, interaction):
 # ------------------------
 MENU = {
     "全日メニュー":{
+        "めんこいくん鍋":{"price":8500,"cost":4250},
+        "一口コロッケ":{"price":4000,"cost":1875},
+        "京のぶぶ漬け":{"price":8500,"cost":4250},
         "湯巡り梅":{"price":3500,"cost":1750},
         "ほかほか湯豆腐スープ":{"price":5000,"cost":2375},
         "お子様ランチ":{"price":4000,"cost":1750},
@@ -278,19 +281,25 @@ MENU = {
         "ちるいん":{"price":8000,"cost":3625},
         },
     "季節限定メニュー":{
+        "5月限定こいのぼりセット":{"price":12000,"cost":6775},
         "春の桜づくしセット":{"price":16000,"cost":6625},
         "桜香る春御膳":{"price":6000,"cost":1500},
         "湯けむり桜ソーダ":{"price":7000,"cost":3125},
         "桜にごり酒":{"price":6000,"cost":2000},
-        "ちらし寿司(販売停止)":{"price":10000,"cost":3500},
-        "本つげ櫛(販売停止)":{"price":10000,"cost":2500},
-        "恋したあの人(販売停止)":{"price":7000,"cost":1500},
+        "ちらし寿司":{"price":10000,"cost":3500},
+        "本つげ櫛":{"price":10000,"cost":2500},
+        "恋したあの人":{"price":7000,"cost":1500},
         },
     "特別販売メニュー":{
+        "赤の刀":{"price":0,"cost":500000},
+        "青の刀":{"price":0,"cost":500000},
+        "緑の刀":{"price":0,"cost":500000},
+        "黄の刀":{"price":0,"cost":500000},
+        "紫の刀":{"price":0,"cost":500000},
         "千年鯛のお寿司":{"price":4500,"cost":2500},
         },
     "移動販売メニュー":{
-        "気まぐれ医出張販売セット(移動)":{"price":7000,"cost":1500,"mobile":True},
+        "気まぐれ出張販売セット(移動)":{"price":7000,"cost":3875,"mobile":True},
         "しゅわしゅわラムネ(移動)":{"price":3000,"cost":1500,"mobile":True},
         "ほかほか湯豆腐スープ(移動)":{"price":4500,"cost":2375,"mobile":True},
         "いっぱい飲みにKOIよセット":{"price":13000,"cost":5250,"mobile":True},
@@ -897,6 +906,26 @@ SEARCH_MENU = {
             "満腹": 0,
             "水分": "-10",
             "ストレス": 40,
+            "使用速度": "普",
+            "移動上昇": False
+        },
+        "御宿のぼり": {
+            "金額": 6800,
+            "体力": 0,
+            "アーマー": 40,
+            "満腹": 15  ,
+            "水分": "0",
+            "ストレス": 0,
+            "使用速度": "普",
+            "移動上昇": True
+        },
+        "鯉のぼり(和紙)生春巻き": {
+            "金額": 4300,
+            "体力": 15,
+            "アーマー": 0,
+            "満腹": 25,
+            "水分": "0",
+            "ストレス": 30,
             "使用速度": "普",
             "移動上昇": False
         },
@@ -5830,33 +5859,72 @@ async def backup(interaction):
 
 @tree.command(name="buy")
 async def buy(interaction):
-    all_items = {}
 
-    for cat,items in MENU.items():
-        for item,data_item in items.items():
+    # ------------------------
+    # 分類
+    # ------------------------
+    regular_cats = ["全日メニュー", "曜日限定メニュー", "チル限定メニュー","販売停止メニュー"]
+    limited_cats = ["季節限定メニュー", "特別販売メニュー"]
+
+    regular_items = {}
+    limited_items = {}
+
+    # ------------------------
+    # 初期化
+    # ------------------------
+    for cat, items in MENU.items():
+        for item, data_item in items.items():
+
+            # 移動・イベント除外
             if data_item.get("mobile") or data_item.get("event"):
                 continue
-            all_items[item]=0
 
+            if cat in regular_cats:
+                regular_items[item] = 0
+            elif cat in limited_cats:
+                limited_items[item] = 0
+
+    # ------------------------
+    # 集計
+    # ------------------------
     for u in data.values():
         for item, qty in u.get("items", {}).items():
-            if item in all_items:
-                all_items[item]+=qty
 
-    ranking = sorted(all_items.items(), key=lambda x: x[1], reverse=True)
+            if item in regular_items:
+                regular_items[item] += qty
 
-    text = "📊【全体商品ランキング】\n\n"
+            if item in limited_items:
+                limited_items[item] += qty
 
-    prev_qty = None
-    rank = 0
-    display_rank = 0
+    # ------------------------
+    # ランキング生成関数
+    # ------------------------
+    def build_ranking(title, items_dict):
+        ranking = sorted(items_dict.items(), key=lambda x: x[1], reverse=True)
 
-    for item, qty in ranking:
-        rank += 1
-        if qty != prev_qty:
-            display_rank = rank
-            prev_qty = qty
-        text += f"{display_rank}位：{item} ×{qty}個\n"
+        text = f"📊【{title}】\n\n"
+
+        prev_qty = None
+        rank = 0
+        display_rank = 0
+
+        for item, qty in ranking:
+            rank += 1
+            if qty != prev_qty:
+                display_rank = rank
+                prev_qty = qty
+
+            text += f"{display_rank}位：{item} ×{qty}個\n"
+
+        return text
+
+    # ------------------------
+    # 出力
+    # ------------------------
+    text = ""
+    text += build_ranking("常設商品ランキング", regular_items)
+    text += "\n"
+    text += build_ranking("限定商品ランキング", limited_items)
 
     await interaction.response.send_message(text, ephemeral=True)
 
@@ -6194,3 +6262,5 @@ async def on_ready():
     print("起動OK2")
 
 bot.run(os.getenv("TOKEN"))
+
+
